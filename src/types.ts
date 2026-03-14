@@ -1,0 +1,61 @@
+export type ServiceStatus = 'agendado' | 'pendente' | 'concluído' | 'cancelado' | 'perdido';
+export type PaymentMethod = 'pix' | 'dinheiro' | 'cartão';
+export type Gender = 'masculino' | 'feminino';
+
+export interface Client {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  gender: Gender;
+  observations?: string;
+  createdAt: string;
+}
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  description: string;
+  defaultPrice: number;
+  estimatedTime: string;
+  active: boolean;
+}
+
+export interface Booking {
+  id: string;
+  clientId: string;
+  serviceTypeId: string;
+  date: string;
+  time: string;
+  originalPrice: number;
+  discount: number;
+  coupon?: string;
+  finalPrice: number;
+  status: ServiceStatus;
+  paymentMethod?: PaymentMethod;
+  lostReason?: string;
+  observations?: string;
+  createdAt: string;
+}
+
+export type ExpenseCategory = 'investimento' | 'operacional' | 'manutenção' | 'outro';
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: ExpenseCategory;
+  date: string;
+  createdAt: string;
+}
+
+export interface DashboardStats {
+  totalMonth: number;
+  scheduled: number;
+  pending: number;
+  completed: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  profit: number;
+}
