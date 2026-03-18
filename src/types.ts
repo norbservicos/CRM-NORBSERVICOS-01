@@ -57,8 +57,9 @@ export interface Expense {
 export interface DashboardStats {
   totalMonth: number;
   scheduled: number;
-  pending: number;
+  scheduledValue: number;
   completed: number;
+  lost: number;
   totalRevenue: number;
   totalExpenses: number;
   profit: number;

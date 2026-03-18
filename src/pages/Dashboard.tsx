@@ -224,7 +224,13 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard 
+          title="Serviços Mês" 
+          value={stats.totalMonth} 
+          icon={ClipboardList} 
+          color="bg-indigo-500" 
+        />
         <StatCard 
           title="Agendados" 
           value={stats.scheduled} 
@@ -236,6 +242,18 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           value={formatCurrency(stats.scheduledValue)} 
           icon={Clock} 
           color="bg-amber-500" 
+        />
+        <StatCard 
+          title="Concluídos" 
+          value={stats.completed} 
+          icon={CheckCircle2} 
+          color="bg-blue-900" 
+        />
+        <StatCard 
+          title="Perdidos" 
+          value={stats.lost} 
+          icon={XCircle} 
+          color="bg-red-500" 
         />
         <StatCard 
           title="Faturamento" 
@@ -254,27 +272,6 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           value={formatCurrency(stats.profit)} 
           icon={TrendingUp} 
           color="bg-emerald-600" 
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard 
-          title="Serviços Mês" 
-          value={stats.totalMonth} 
-          icon={ClipboardList} 
-          color="bg-indigo-500" 
-        />
-        <StatCard 
-          title="Perdidos" 
-          value={stats.lost} 
-          icon={XCircle} 
-          color="bg-red-500" 
-        />
-        <StatCard 
-          title="Concluídos" 
-          value={stats.completed} 
-          icon={CheckCircle2} 
-          color="bg-blue-900" 
         />
       </div>
 
