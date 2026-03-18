@@ -58,27 +58,39 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
     const completed = filteredBookings.filter(b => b.status === 'concluído').length;
     const completedBookings = filteredBookings.filter(b => b.status === 'concluído');
     const totalRevenue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+    const scheduledValue = filteredBookings.filter(b => b.status === 'agendado').reduce((acc, b) => acc + b.finalPrice, 0);
 
     // Calculate expenses for the month
     const totalExpenses = store.expenses.filter(e => {
       const eDate = new Date(e.date);
-      return eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+      const matchesMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+      const matchesDate = filterDate ? e.date === filterDate : true;
+      return matchesMonth && matchesDate;
     }).reduce((acc, e) => acc + e.amount, 0);
 
     const profit = totalRevenue - totalExpenses;
 
-    // Gender breakdown for bookings in the filtered period
+    // Gender breakdown for COMPLETED bookings in the filtered period
     let menCount = 0;
     let womenCount = 0;
-    filteredBookings.forEach(b => {
+    let otherGenderCount = 0;
+    completedBookings.forEach(b => {
       const client = store.clients.find(c => c.id === b.clientId);
       if (client?.gender === 'masculino') menCount++;
       else if (client?.gender === 'feminino') womenCount++;
+      else otherGenderCount++;
     });
 
-    // Calculate service type distribution
+    // Payment method breakdown for COMPLETED bookings
+    const paymentMethods = {
+      pix: completedBookings.filter(b => b.paymentMethod === 'pix').length,
+      dinheiro: completedBookings.filter(b => b.paymentMethod === 'dinheiro').length,
+      cartão: completedBookings.filter(b => b.paymentMethod === 'cartão').length,
+    };
+
+    // Calculate service type distribution for COMPLETED bookings
     const typeDistributionMap: Record<string, number> = {};
-    filteredBookings.forEach(b => {
+    completedBookings.forEach(b => {
       const service = store.serviceTypes.find(s => s.id === b.serviceTypeId);
       const name = service?.name || 'Outros';
       typeDistributionMap[name] = (typeDistributionMap[name] || 0) + 1;
@@ -95,10 +107,13 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       lost, 
       completed, 
       totalRevenue, 
+      scheduledValue,
       totalExpenses, 
       profit, 
       menCount, 
       womenCount, 
+      otherGenderCount,
+      paymentMethods,
       typeDistribution 
     };
   }, [store.bookings, store.expenses, filterDate, filterType, store.serviceTypes, store.clients]);
@@ -112,16 +127,16 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6'];
 
   const genderData = [
-    { name: 'Masculino', value: store.clients.filter(c => c.gender === 'masculino').length, color: '#3b82f6' },
-    { name: 'Feminino', value: store.clients.filter(c => c.gender === 'feminino').length, color: '#ec4899' },
-    { name: 'Outro', value: store.clients.filter(c => c.gender === 'outro').length, color: '#94a3b8' },
-  ];
+    { name: 'Masculino', value: stats.menCount, color: '#3b82f6' },
+    { name: 'Feminino', value: stats.womenCount, color: '#ec4899' },
+    { name: 'Outro', value: stats.otherGenderCount, color: '#94a3b8' },
+  ].filter(d => d.value > 0);
 
   const paymentData = [
-    { name: 'PIX', value: store.bookings.filter(b => b.paymentMethod === 'pix').length, color: '#141414' },
-    { name: 'Dinheiro', value: store.bookings.filter(b => b.paymentMethod === 'dinheiro').length, color: '#22c55e' },
-    { name: 'Cartão', value: store.bookings.filter(b => b.paymentMethod === 'cartão').length, color: '#3b82f6' },
-  ];
+    { name: 'PIX', value: stats.paymentMethods.pix, color: '#141414' },
+    { name: 'Dinheiro', value: stats.paymentMethods.dinheiro, color: '#22c55e' },
+    { name: 'Cartão', value: stats.paymentMethods.cartão, color: '#3b82f6' },
+  ].filter(d => d.value > 0);
 
   const generateReport = () => {
     const doc = new jsPDF();
@@ -136,6 +151,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       ['Serviços Concluídos', stats.completed.toString()],
       ['Serviços Perdidos', stats.lost.toString()],
       ['Serviços Agendados', stats.scheduled.toString()],
+      ['Valor Agendado', formatCurrency(stats.scheduledValue)],
       ['Faturamento Total', formatCurrency(stats.totalRevenue)],
       ['Total de Gastos', formatCurrency(stats.totalExpenses)],
       ['Lucro Líquido', formatCurrency(stats.profit)],
@@ -208,12 +224,18 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard 
           title="Agendados" 
           value={stats.scheduled} 
           icon={Calendar} 
           color="bg-blue-500" 
+        />
+        <StatCard 
+          title="Valor Agendado" 
+          value={formatCurrency(stats.scheduledValue)} 
+          icon={Clock} 
+          color="bg-amber-500" 
         />
         <StatCard 
           title="Faturamento" 
@@ -359,7 +381,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
                   </Pie>
                   <Tooltip 
                     formatter={(value: number) => {
-                      const percentage = ((value / stats.totalMonth) * 100).toFixed(1);
+                      const percentage = ((value / (stats.completed || 1)) * 100).toFixed(1);
                       return [`${value} (${percentage}%)`, 'Quantidade'];
                     }}
                   />

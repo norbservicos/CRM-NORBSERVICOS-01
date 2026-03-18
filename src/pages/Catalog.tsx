@@ -24,6 +24,8 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    defaultPrice: 0,
+    estimatedTime: '01:00',
     active: true
   });
 
@@ -34,11 +36,13 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
       setFormData({
         name: service.name,
         description: service.description,
+        defaultPrice: service.defaultPrice || 0,
+        estimatedTime: service.estimatedTime || '01:00',
         active: service.active
       });
     } else {
       setEditingService(null);
-      setFormData({ name: '', description: '', active: true });
+      setFormData({ name: '', description: '', defaultPrice: 0, estimatedTime: '01:00', active: true });
     }
     setIsModalOpen(true);
   };
@@ -219,6 +223,29 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Preço Base (R$)</label>
+                  <input 
+                    required
+                    type="number" 
+                    step="0.01"
+                    className="w-full rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
+                    value={formData.defaultPrice}
+                    onChange={(e) => setFormData({...formData, defaultPrice: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tempo Estimado</label>
+                  <input 
+                    required
+                    type="time" 
+                    className="w-full rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
+                    value={formData.estimatedTime}
+                    onChange={(e) => setFormData({...formData, estimatedTime: e.target.value})}
+                  />
+                </div>
               </div>
               <div className="flex items-center space-x-3 pt-2">
                 <input 

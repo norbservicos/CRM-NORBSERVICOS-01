@@ -133,30 +133,7 @@ export function useStore() {
           await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
         }
       } else {
-        // Ensure the 3 specific services exist (by name check)
-        const currentNames = services.map(s => s.name.toLowerCase());
-        let neededSeeding = false;
-        
-        for (const st of INITIAL_SERVICE_TYPES) {
-          if (!currentNames.includes(st.name.toLowerCase())) {
-            neededSeeding = true;
-            const id = crypto.randomUUID();
-            await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
-          }
-        }
-        
-        // Deactivate services not in the list (optional, but helps "leave only")
-        const allowedNames = INITIAL_SERVICE_TYPES.map(s => s.name.toLowerCase());
-        for (const s of services) {
-          if (s.active && !allowedNames.includes(s.name.toLowerCase())) {
-            await updateDoc(doc(db, 'serviceTypes', s.id), { active: false });
-          }
-        }
-        
-        // If we didn't need to seed anything new, set the state
-        if (!neededSeeding) {
-          setServiceTypes(services);
-        }
+        setServiceTypes(services);
       }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'serviceTypes'));
 
