@@ -8,7 +8,9 @@ import {
   Download,
   XCircle,
   ArrowDownRight,
-  ClipboardList
+  ClipboardList,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -38,6 +40,7 @@ interface DashboardProps {
 export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   const [filterDate, setFilterDate] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [showValues, setShowValues] = useState(true);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -182,6 +185,13 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         </div>
         <div className="flex items-center gap-3">
           <button 
+            onClick={() => setShowValues(!showValues)}
+            className="bg-white border border-slate-200 text-slate-700 p-2 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+            title={showValues ? "Ocultar valores" : "Mostrar valores"}
+          >
+            {showValues ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+          <button 
             onClick={generateReport}
             className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-medium flex items-center hover:bg-slate-50 transition-all shadow-sm"
           >
@@ -230,48 +240,56 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           value={stats.totalMonth} 
           icon={ClipboardList} 
           color="bg-indigo-500" 
+          showValue={showValues}
         />
         <StatCard 
           title="Agendados" 
           value={stats.scheduled} 
           icon={Calendar} 
           color="bg-blue-500" 
+          showValue={showValues}
         />
         <StatCard 
           title="Valor Agendado" 
           value={formatCurrency(stats.scheduledValue)} 
           icon={Clock} 
           color="bg-amber-500" 
+          showValue={showValues}
         />
         <StatCard 
           title="Concluídos" 
           value={stats.completed} 
           icon={CheckCircle2} 
           color="bg-blue-900" 
+          showValue={showValues}
         />
         <StatCard 
           title="Perdidos" 
           value={stats.lost} 
           icon={XCircle} 
           color="bg-red-500" 
+          showValue={showValues}
         />
         <StatCard 
           title="Faturamento" 
           value={formatCurrency(stats.totalRevenue)} 
           icon={DollarSign} 
           color="bg-slate-900" 
+          showValue={showValues}
         />
         <StatCard 
           title="Gastos" 
           value={formatCurrency(stats.totalExpenses)} 
           icon={ArrowDownRight} 
           color="bg-red-500" 
+          showValue={showValues}
         />
         <StatCard 
           title="Lucro" 
           value={formatCurrency(stats.profit)} 
           icon={TrendingUp} 
           color="bg-emerald-600" 
+          showValue={showValues}
         />
       </div>
 
@@ -434,15 +452,16 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color }: any) {
+function StatCard({ title, value, icon: Icon, color, showValue = true }: any) {
   return (
     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
-      <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-110", color)} />
       <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg", color)}>
         <Icon size={24} />
       </div>
       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-black text-slate-900">{value}</p>
+      <p className="text-2xl font-black text-slate-900">
+        {showValue ? value : "••••••"}
+      </p>
     </div>
   );
 }
