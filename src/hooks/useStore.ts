@@ -130,16 +130,27 @@ export function useStore() {
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
 
+    // Fallback loading state if snapshots are slow but empty
+    const timeout = setTimeout(() => setLoading(false), 3000);
+
     return () => {
       unsubClients();
       unsubServiceTypes();
       unsubBookings();
       unsubExpenses();
+      clearTimeout(timeout);
     };
   }, [isAuthReady, user]);
 
   const addClient = async (client: Omit<Client, 'id' | 'createdAt' | 'uid'>) => {
     if (!user) return;
+
+    // Check for duplicate phone number
+    const existingClient = clients.find(c => c.phone.replace(/\D/g, '') === client.phone.replace(/\D/g, ''));
+    if (existingClient) {
+      return existingClient;
+    }
+
     const id = crypto.randomUUID();
     const newClient = { 
       ...client, 

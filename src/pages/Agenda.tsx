@@ -64,63 +64,67 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="grid grid-cols-8 border-b border-slate-100 bg-slate-50/50">
-          <div className="p-4 border-r border-slate-100"></div>
-          {weekDays.map(day => (
-            <div 
-              key={day.toString()} 
-              className={cn(
-                "p-4 text-center border-r border-slate-100 last:border-r-0",
-                isSameDay(day, new Date()) && "bg-blue-50"
-              )}
-            >
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>{format(day, 'EEE', { locale: ptBR })}</span>
-              </p>
-              <p className={cn(
-                "text-lg font-black",
-                isSameDay(day, new Date()) ? "text-blue-900" : "text-slate-900"
-              )}>
-                <span>{format(day, 'dd')}</span>
-              </p>
+        <div className="overflow-x-auto">
+          <div className="min-w-[800px]">
+            <div className="grid grid-cols-8 border-b border-slate-100 bg-slate-50/50">
+              <div className="p-4 border-r border-slate-100"></div>
+              {weekDays.map(day => (
+                <div 
+                  key={day.toString()} 
+                  className={cn(
+                    "p-4 text-center border-r border-slate-100 last:border-r-0",
+                    isSameDay(day, new Date()) && "bg-blue-50"
+                  )}
+                >
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>{format(day, 'EEE', { locale: ptBR })}</span>
+                  </p>
+                  <p className={cn(
+                    "text-lg font-black",
+                    isSameDay(day, new Date()) ? "text-blue-900" : "text-slate-900"
+                  )}>
+                    <span>{format(day, 'dd')}</span>
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="max-h-[600px] overflow-y-auto">
-          {hours.map(hour => (
-            <div key={hour} className="grid grid-cols-8 border-b border-slate-50 last:border-b-0 min-h-[80px]">
-              <div className="p-4 border-r border-slate-100 text-right">
-                <span className="text-xs font-bold text-slate-400"><span>{hour}</span></span>
-              </div>
-              {weekDays.map(day => {
-                const dayBookings = getBookingsForDayAndHour(day, hour);
-                return (
-                  <div key={day.toString() + hour} className="p-1 border-r border-slate-100 last:border-r-0 relative group">
-                    {dayBookings.map(booking => {
-                      const client = store.clients.find(c => c.id === booking.clientId);
-                      const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
-                      return (
-                        <div 
-                          key={booking.id}
-                          className={cn(
-                            "p-2 rounded-xl text-[10px] shadow-sm mb-1 border transition-all cursor-pointer hover:scale-[1.02]",
-                            booking.status === 'concluído' 
-                              ? "bg-blue-50 border-blue-100 text-black" 
-                              : "bg-blue-50 border-blue-100 text-blue-700"
-                          )}
-                        >
-                          <p className="font-bold truncate"><span>{client?.name}</span></p>
-                          <p className="opacity-70 truncate"><span>{service?.name}</span></p>
-                          <p className="mt-1 font-black"><span>{booking.time}</span></p>
-                        </div>
-                      );
-                    })}
+            <div className="max-h-[600px] overflow-y-auto">
+              {hours.map(hour => (
+                <div key={hour} className="grid grid-cols-8 border-b border-slate-50 last:border-b-0 min-h-[80px]">
+                  <div className="p-4 border-r border-slate-100 text-right">
+                    <span className="text-xs font-bold text-slate-400"><span>{hour}</span></span>
                   </div>
-                );
-              })}
+                  {weekDays.map(day => {
+                    const dayBookings = getBookingsForDayAndHour(day, hour);
+                    return (
+                      <div key={day.toString() + hour} className="p-1 border-r border-slate-100 last:border-r-0 relative group">
+                        {dayBookings.map(booking => {
+                          const client = store.clients.find(c => c.id === booking.clientId);
+                          const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
+                          return (
+                            <div 
+                              key={booking.id}
+                              className={cn(
+                                "p-2 rounded-xl text-[10px] shadow-sm mb-1 border transition-all cursor-pointer hover:scale-[1.02]",
+                                booking.status === 'concluído' 
+                                  ? "bg-blue-50 border-blue-100 text-black" 
+                                  : "bg-blue-50 border-blue-100 text-blue-700"
+                              )}
+                            >
+                              <p className="font-bold truncate"><span>{client?.name}</span></p>
+                              <p className="opacity-70 truncate"><span>{service?.name}</span></p>
+                              <p className="mt-1 font-black"><span>{booking.time}</span></p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>

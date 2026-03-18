@@ -1,4 +1,4 @@
-import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -85,11 +85,23 @@ type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agend
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const store = useStore();
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      if (mobile) setIsSidebarOpen(false);
+      else setIsSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
@@ -205,15 +217,23 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex text-slate-900 font-sans">
+      {/* Sidebar Overlay for Mobile */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-slate-900 text-white transition-all duration-300 flex flex-col fixed h-full z-50",
-          isSidebarOpen ? "w-64" : "w-20"
+          "bg-slate-900 text-white transition-all duration-300 flex flex-col fixed h-full z-50 shadow-2xl",
+          isSidebarOpen ? "w-64 translate-x-0" : isMobile ? "-translate-x-full" : "w-20 translate-x-0"
         )}
       >
-        <div className={cn("p-6 flex items-center justify-between", !isSidebarOpen && "px-0 justify-center")}>
-          <Logo collapsed={!isSidebarOpen} />
+        <div className={cn("p-6 flex items-center justify-between", !isSidebarOpen && !isMobile && "px-0 justify-center")}>
+          <Logo collapsed={!isSidebarOpen && !isMobile} />
           {isSidebarOpen && (
             <button 
               onClick={() => setIsSidebarOpen(false)}
@@ -224,7 +244,7 @@ function MainApp() {
           )}
         </div>
 
-        {!isSidebarOpen && (
+        {!isSidebarOpen && !isMobile && (
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="mx-auto mb-6 p-3 hover:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white"
@@ -233,13 +253,14 @@ function MainApp() {
           </button>
         )}
 
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => {
                 if (item.onClick) item.onClick();
                 else setActiveTab(item.id as Tab);
+                if (isMobile) setIsSidebarOpen(false);
               }}
               className={cn(
                 "w-full flex items-center p-3 rounded-xl transition-all group",
@@ -249,7 +270,7 @@ function MainApp() {
               )}
             >
               <item.icon size={20} className={cn(activeTab === item.id ? "text-white" : "group-hover:text-white")} />
-              {isSidebarOpen && <span className="ml-3 font-medium">{item.label}</span>}
+              {(isSidebarOpen || isMobile) && <span className="ml-3 font-medium">{item.label}</span>}
             </button>
           ))}
         </nav>
@@ -287,17 +308,25 @@ function MainApp() {
       {/* Main Content */}
       <main className={cn(
         "flex-1 transition-all duration-300 min-h-screen",
-        isSidebarOpen ? "ml-64" : "ml-20"
+        isSidebarOpen && !isMobile ? "ml-64" : !isMobile ? "ml-20" : "ml-0"
       )}>
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 sticky top-0 z-40">
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-40">
           <div className="flex items-center space-x-4">
-            {!isSidebarOpen && <Logo collapsed className="scale-75 origin-left" />}
-            <div className="flex items-center bg-slate-100 rounded-xl px-3 py-2 w-96">
+            {isMobile && (
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            {!isSidebarOpen && !isMobile && <Logo collapsed className="scale-75 origin-left" />}
+            <div className={cn("hidden md:flex items-center bg-slate-100 rounded-xl px-3 py-2 w-64 lg:w-96")}>
               <Search size={18} className="text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Busca global (clientes, serviços...)" 
+                placeholder="Busca global..." 
                 className="bg-transparent border-none focus:ring-0 ml-2 w-full text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -305,24 +334,24 @@ function MainApp() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Serviços hoje</p>
-              <p className="text-lg font-bold text-slate-900">
+              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Hoje</p>
+              <p className="text-base font-bold text-slate-900">
                 {store.bookings.filter(b => b.date === new Date().toISOString().split('T')[0]).length}
               </p>
             </div>
             <button 
               onClick={handleNewBooking}
-              className="bg-blue-900 hover:bg-black text-white px-4 py-2 rounded-xl font-medium flex items-center transition-all shadow-lg shadow-blue-900/20"
+              className="bg-blue-900 hover:bg-black text-white px-3 sm:px-4 py-2 rounded-xl font-medium flex items-center transition-all shadow-lg shadow-blue-900/20 text-sm sm:text-base"
             >
-              <PlusCircle size={18} className="mr-2" />
-              Novo Agendamento
+              <PlusCircle size={18} className="sm:mr-2" />
+              <span className="hidden sm:inline">Novo Agendamento</span>
             </button>
           </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
           {renderContent()}
         </div>
       </main>

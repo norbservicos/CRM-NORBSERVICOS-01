@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   FileText, 
   Download, 
@@ -7,25 +7,32 @@ import {
   TrendingUp, 
   Award,
   Calendar,
-  ArrowDownRight
+  ArrowDownRight,
+  ChevronLeft,
+  ChevronRight,
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { formatCurrency, cn } from '../utils/utils';
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 export default function Reports({ store }: { store: ReturnType<typeof useStore> }) {
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-    const currentMonthBookings = store.bookings.filter(b => {
+  const stats = useMemo(() => {
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
+
+    const periodBookings = store.bookings.filter(b => {
       const bDate = new Date(b.date);
       return bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
     });
 
-    const completed = currentMonthBookings.filter(b => b.status === 'concluído');
+    const completed = periodBookings.filter(b => b.status === 'concluído');
     
     // Most sold services
     const serviceCounts = store.serviceTypes.map(type => {
@@ -51,7 +58,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     // Gender breakdown for the month
     let menCount = 0;
     let womenCount = 0;
-    currentMonthBookings.forEach(b => {
+    periodBookings.forEach(b => {
       const client = store.clients.find(c => c.id === b.clientId);
       if (client?.gender === 'masculino') menCount++;
       else if (client?.gender === 'feminino') womenCount++;
@@ -63,19 +70,27 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
       totalClients, 
       avgValue, 
       completedCount: completed.length,
-      totalMonthBookings: currentMonthBookings.length,
+      totalMonthBookings: periodBookings.length,
       totalExpenses,
       profit,
       menCount,
-      womenCount
+      womenCount,
+      periodBookings: periodBookings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     };
-  }, [store.bookings, store.serviceTypes, store.clients, store.expenses]);
+  }, [store.bookings, store.serviceTypes, store.clients, store.expenses, selectedDate]);
+
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + offset);
+    setSelectedDate(newDate);
+  };
 
   const exportPDF = () => {
     const doc = new jsPDF();
+    const periodStr = format(selectedDate, 'MMMM yyyy', { locale: ptBR });
     doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text('Relatório Executivo - NORB Gestão Pro', 14, 25);
+    doc.text(`Relatório - ${periodStr}`, 14, 25);
     
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);
@@ -91,14 +106,14 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     
     const summaryData = [
       ['Total de Clientes', stats.totalClients.toString()],
-      ['Agendamentos no Mês', stats.totalMonthBookings.toString()],
-      ['Serviços Realizados (Mês)', stats.completedCount.toString()],
-      ['Faturamento Total (Mês)', formatCurrency(stats.totalRevenue)],
-      ['Total de Gastos (Mês)', formatCurrency(stats.totalExpenses)],
-      ['Lucro Líquido (Mês)', formatCurrency(stats.profit)],
+      ['Agendamentos no Período', stats.totalMonthBookings.toString()],
+      ['Serviços Realizados', stats.completedCount.toString()],
+      ['Faturamento Total', formatCurrency(stats.totalRevenue)],
+      ['Total de Gastos', formatCurrency(stats.totalExpenses)],
+      ['Lucro Líquido', formatCurrency(stats.profit)],
       ['Ticket Médio', formatCurrency(stats.avgValue)],
-      ['Clientes Homens (Mês)', stats.menCount.toString()],
-      ['Clientes Mulheres (Mês)', stats.womenCount.toString()],
+      ['Clientes Homens', stats.menCount.toString()],
+      ['Clientes Mulheres', stats.womenCount.toString()],
     ];
 
     (doc as any).autoTable({
@@ -126,23 +141,47 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
       headStyles: { fillColor: [0, 0, 0] }
     });
 
-    doc.save('relatorio-executivo-norb.pdf');
+    doc.save(`relatorio-${periodStr.replace(' ', '-')}.pdf`);
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Relatórios Executivos</h2>
-          <p className="text-slate-500">Análise detalhada do seu negócio.</p>
+          <h2 className="text-2xl font-bold text-slate-900">Relatórios e Histórico</h2>
+          <p className="text-slate-500">Acompanhe o desempenho e histórico de atendimentos.</p>
         </div>
-        <button 
-          onClick={exportPDF}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold flex items-center transition-all shadow-lg"
-        >
-          <Download size={20} className="mr-2" />
-          Exportar PDF
-        </button>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
+            <button 
+              onClick={() => changeMonth(-1)}
+              className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="px-4 text-center min-w-[140px]">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Período</p>
+              <p className="font-black text-slate-900 capitalize">
+                {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+              </p>
+            </div>
+            <button 
+              onClick={() => changeMonth(1)}
+              className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          <button 
+            onClick={exportPDF}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold flex items-center transition-all shadow-lg"
+          >
+            <Download size={20} className="mr-2" />
+            Exportar PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -153,26 +192,30 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             Serviços Mais Vendidos
           </h3>
           <div className="space-y-6">
-            {stats.serviceCounts.map((service, index) => (
-              <div key={service.id} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">#{index + 1}</span>
-                    <p className="font-bold text-slate-900">{service.name}</p>
+            {stats.serviceCounts.length > 0 ? (
+              stats.serviceCounts.map((service, index) => (
+                <div key={service.id} className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">#{index + 1}</span>
+                      <p className="font-bold text-slate-900">{service.name}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-slate-900">{service.count} vendas</p>
+                      <p className="text-xs text-blue-900 font-bold">{formatCurrency(service.revenue)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-slate-900">{service.count} vendas</p>
-                    <p className="text-xs text-blue-900 font-bold">{formatCurrency(service.revenue)}</p>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-900 rounded-full transition-all duration-1000" 
+                      style={{ width: `${(service.count / (stats.serviceCounts[0]?.count || 1)) * 100}%` }}
+                    />
                   </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-900 rounded-full transition-all duration-1000" 
-                    style={{ width: `${(service.count / (stats.serviceCounts[0]?.count || 1)) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-slate-400 text-center py-10">Nenhum serviço realizado neste período.</p>
+            )}
           </div>
         </div>
 
@@ -186,14 +229,14 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             bgColor="bg-blue-50" 
           />
           <ReportStat 
-            title="Lucro Mensal" 
+            title="Lucro no Período" 
             value={formatCurrency(stats.profit)} 
             icon={TrendingUp} 
             color="text-emerald-600" 
             bgColor="bg-emerald-50" 
           />
           <ReportStat 
-            title="Gastos Mensais" 
+            title="Gastos no Período" 
             value={formatCurrency(stats.totalExpenses)} 
             icon={ArrowDownRight} 
             color="text-red-600" 
@@ -206,6 +249,103 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             color="text-amber-600" 
             bgColor="bg-amber-50" 
           />
+        </div>
+      </div>
+
+      {/* Detailed History for Follow-up */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-lg font-bold flex items-center">
+            <Calendar size={20} className="mr-2 text-blue-600" />
+            Histórico de Atendimentos e Follow-up
+          </h3>
+          <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
+            {stats.periodBookings.length} atendimentos
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Data</th>
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente</th>
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Serviço</th>
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Valor</th>
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {stats.periodBookings.length > 0 ? (
+                stats.periodBookings.map(booking => {
+                  const client = store.clients.find(c => c.id === booking.clientId);
+                  const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
+                  return (
+                    <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-4">
+                        <p className="text-sm font-bold text-slate-900">{format(new Date(booking.date), 'dd/MM/yyyy')}</p>
+                        <p className="text-xs text-slate-400">{booking.time}</p>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-xs font-bold text-slate-600">
+                            {client?.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{client?.name}</p>
+                            <p className="text-xs text-slate-400">{client?.phone}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-slate-700">{service?.name}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-black text-slate-900">{formatCurrency(booking.finalPrice)}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          booking.status === 'concluído' ? "bg-emerald-50 text-emerald-700" :
+                          booking.status === 'agendado' ? "bg-blue-50 text-blue-700" :
+                          "bg-red-50 text-red-700"
+                        )}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          {client?.phone && (
+                            <a 
+                              href={`https://wa.me/55${client.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
+                              title="WhatsApp Follow-up"
+                            >
+                              <MessageSquare size={18} />
+                            </a>
+                          )}
+                          <button 
+                            className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                            title="Ver Detalhes"
+                          >
+                            <FileText size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-10 text-center text-slate-400">
+                    Nenhum atendimento registrado para este período.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

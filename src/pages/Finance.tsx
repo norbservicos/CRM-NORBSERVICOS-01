@@ -18,7 +18,8 @@ import {
   ResponsiveContainer,
   Cell,
   LineChart,
-  Line
+  Line,
+  Legend
 } from 'recharts';
 import { useStore } from '../hooks/useStore';
 import { formatCurrency, cn } from '../utils/utils';
@@ -28,6 +29,8 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
     const completedBookings = store.bookings.filter(b => b.status === 'concluído');
     
     const totalRevenue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+    const totalExpenses = store.expenses.reduce((acc, e) => acc + e.amount, 0);
+    const netProfit = totalRevenue - totalExpenses;
     const totalServices = completedBookings.length;
     const averageTicket = totalServices > 0 ? totalRevenue / totalServices : 0;
 
@@ -39,7 +42,7 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
       return { name: type.name, value: revenue };
     }).filter(d => d.value > 0);
 
-    // Monthly revenue (last 6 months)
+    // Monthly revenue and expenses (last 6 months)
     const monthlyData = [...Array(6)].map((_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - i));
@@ -54,11 +57,18 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
         })
         .reduce((acc, b) => acc + b.finalPrice, 0);
 
-      return { name: monthLabel, revenue };
+      const expenses = store.expenses
+        .filter(e => {
+          const eDate = new Date(e.date);
+          return eDate.getMonth() === month && eDate.getFullYear() === year;
+        })
+        .reduce((acc, e) => acc + e.amount, 0);
+
+      return { name: monthLabel, revenue, expenses, profit: revenue - expenses };
     });
 
-    return { totalRevenue, totalServices, averageTicket, revenueByService, monthlyData };
-  }, [store.bookings, store.serviceTypes]);
+    return { totalRevenue, totalExpenses, netProfit, totalServices, averageTicket, revenueByService, monthlyData };
+  }, [store.bookings, store.serviceTypes, store.expenses]);
 
   return (
     <div className="space-y-8">
@@ -76,24 +86,24 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
           positive={true}
         />
         <FinanceCard 
+          title="Gastos Totais" 
+          value={formatCurrency(stats.totalExpenses)} 
+          icon={ArrowDownRight} 
+          trend="-5.2%" 
+          positive={false}
+        />
+        <FinanceCard 
+          title="Lucro Líquido" 
+          value={formatCurrency(stats.netProfit)} 
+          icon={TrendingUp} 
+          trend="+15.8%" 
+          positive={stats.netProfit >= 0}
+        />
+        <FinanceCard 
           title="Ticket Médio" 
           value={formatCurrency(stats.averageTicket)} 
           icon={Target} 
           trend="+3.2%" 
-          positive={true}
-        />
-        <FinanceCard 
-          title="Serviços Realizados" 
-          value={stats.totalServices} 
-          icon={TrendingUp} 
-          trend="+8.1%" 
-          positive={true}
-        />
-        <FinanceCard 
-          title="Projeção Mensal" 
-          value={formatCurrency(stats.totalRevenue * 1.1)} 
-          icon={BarChart3} 
-          trend="+10%" 
           positive={true}
         />
       </div>
@@ -101,7 +111,7 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Monthly Revenue Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold mb-6">Faturamento Mensal (R$)</h3>
+          <h3 className="text-lg font-bold mb-6">Desempenho Mensal (R$)</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.monthlyData}>
@@ -110,15 +120,34 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [formatCurrency(value), 'Faturamento']}
+                  formatter={(value: number, name: string) => [formatCurrency(value), name === 'revenue' ? 'Faturamento' : name === 'expenses' ? 'Gastos' : 'Lucro']}
                 />
+                <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
+                  name="Faturamento"
                   stroke="#1e3a8a" 
                   strokeWidth={4} 
                   dot={{ r: 6, fill: '#1e3a8a', strokeWidth: 2, stroke: '#fff' }}
                   activeDot={{ r: 8 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="expenses" 
+                  name="Gastos"
+                  stroke="#ef4444" 
+                  strokeWidth={2} 
+                  strokeDasharray="5 5"
+                  dot={{ r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="profit" 
+                  name="Lucro"
+                  stroke="#10b981" 
+                  strokeWidth={2} 
+                  dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
                 />
               </LineChart>
             </ResponsiveContainer>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -9,12 +9,15 @@ import {
   Trash2, 
   MessageSquare,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { Logo } from '../components/Logo';
 import { Client } from '../types';
 import { cn } from '../utils/utils';
+import { format, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Clients({ store }: { store: ReturnType<typeof useStore> }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +25,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [viewingHistory, setViewingHistory] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -31,7 +35,22 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
     observations: ''
   });
 
-  const filteredClients = store.clients.filter(c => 
+  const clientsWithHistory = useMemo(() => {
+    return store.clients.map(client => {
+      const clientBookings = store.bookings
+        .filter(b => b.clientId === client.id && b.status === 'concluído')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      const lastBooking = clientBookings[0];
+      return {
+        ...client,
+        lastServiceDate: lastBooking ? new Date(lastBooking.date) : null,
+        daysSinceLastService: lastBooking ? differenceInDays(new Date(), new Date(lastBooking.date)) : null
+      };
+    });
+  }, [store.clients, store.bookings]);
+
+  const filteredClients = clientsWithHistory.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.phone.includes(searchTerm)
   );
@@ -157,6 +176,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
               <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
                 <th className="px-6 py-4">Nome</th>
                 <th className="px-6 py-4">Contato</th>
+                <th className="px-6 py-4">Último Atendimento</th>
                 <th className="px-6 py-4">Localização</th>
                 <th className="px-6 py-4 text-right">Ações</th>
               </tr>
@@ -178,6 +198,23 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
                     </button>
                   </td>
                   <td className="px-6 py-4">
+                    {client.lastServiceDate ? (
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">
+                          {format(client.lastServiceDate, 'dd/MM/yyyy')}
+                        </p>
+                        <p className={cn(
+                          "text-[10px] font-bold uppercase",
+                          (client.daysSinceLastService || 0) > 30 ? "text-red-500" : "text-slate-400"
+                        )}>
+                          Há {client.daysSinceLastService} dias
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">Nenhum registro</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center text-slate-600 text-sm">
                       <MapPin size={14} className="mr-1 shrink-0" />
                       <span className="truncate max-w-[200px]"><span>{client.address}</span>, <span>{client.city}</span></span>
@@ -185,6 +222,13 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => setViewingHistory(client.id)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Histórico Completo"
+                      >
+                        <Calendar size={18} />
+                      </button>
                       <button 
                         onClick={() => handleOpenModal(client)}
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
@@ -225,6 +269,76 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
           </table>
         </div>
       </div>
+
+      {/* History Modal */}
+      {viewingHistory && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">
+                  Histórico de Atendimentos
+                </h3>
+                <p className="text-sm text-slate-500">
+                  {store.clients.find(c => c.id === viewingHistory)?.name}
+                </p>
+              </div>
+              <button onClick={() => setViewingHistory(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-4">
+                {store.bookings
+                  .filter(b => b.clientId === viewingHistory)
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map(booking => {
+                    const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
+                    return (
+                      <div key={booking.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-blue-900">
+                            <Calendar size={20} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900">{service?.name}</p>
+                            <p className="text-xs text-slate-500">
+                              {format(new Date(booking.date), 'dd/MM/yyyy')} às {booking.time}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-slate-900">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(booking.finalPrice)}
+                          </p>
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                            booking.status === 'concluído' ? "bg-emerald-100 text-emerald-700" :
+                            booking.status === 'agendado' ? "bg-blue-100 text-blue-700" :
+                            "bg-red-100 text-red-700"
+                          )}>
+                            {booking.status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {store.bookings.filter(b => b.clientId === viewingHistory).length === 0 && (
+                  <p className="text-center text-slate-400 py-10 italic">Nenhum atendimento registrado para este cliente.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <button 
+                onClick={() => setViewingHistory(null)}
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (

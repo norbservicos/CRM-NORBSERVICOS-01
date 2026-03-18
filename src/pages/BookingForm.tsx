@@ -79,11 +79,29 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
       }
     }
 
-    if (!clientId || !selectedServiceId || !date || !time || !observations) {
+    if (!clientId || !selectedServiceId || !date || !time) {
       setNotification({ message: 'Por favor, preencha todos os campos obrigatórios.', type: 'error' });
       return;
     }
 
+    // Basic conflict check
+    const hasConflict = store.bookings.some(b => 
+      b.id !== editingBooking?.id && 
+      b.date === date && 
+      b.time === time && 
+      b.status !== 'cancelado' &&
+      b.status !== 'perdido'
+    );
+
+    if (hasConflict) {
+      setNotification({ message: 'Já existe um agendamento para este dia e horário. Deseja continuar mesmo assim?', type: 'error', onConfirm: () => proceedWithBooking(clientId) });
+      return;
+    }
+
+    await proceedWithBooking(clientId);
+  };
+
+  const proceedWithBooking = async (clientId: string) => {
     const bookingData = {
       clientId,
       serviceTypeId: selectedServiceId,
@@ -95,7 +113,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
       finalPrice,
       status: editingBooking?.status || 'agendado',
       paymentMethod,
-      observations
+      observations: observations || ''
     };
 
     if (editingBooking) {
