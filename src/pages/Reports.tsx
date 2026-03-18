@@ -75,7 +75,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     const doc = new jsPDF();
     doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text('Relatório Executivo - Norb Serviços', 14, 25);
+    doc.text('Relatório Executivo - NORB Gestão Pro', 14, 25);
     
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);

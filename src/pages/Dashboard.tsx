@@ -126,7 +126,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   const generateReport = () => {
     const doc = new jsPDF();
     doc.setFontSize(20);
-    doc.text('Relatório Mensal - Norb Serviços', 14, 22);
+    doc.text('Relatório Mensal - NORB Gestão Pro', 14, 22);
     
     doc.setFontSize(12);
     doc.text(`Data de geração: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
@@ -160,7 +160,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
             <Logo collapsed className="w-12 h-12" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">Olá, Norb!</h2>
+            <h2 className="text-3xl font-bold text-slate-900">Olá, NORB!</h2>
             <p className="text-slate-500">Aqui está o que está acontecendo na sua empresa hoje.</p>
           </div>
         </div>

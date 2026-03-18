@@ -69,12 +69,14 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
 
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error', onConfirm?: () => void } | null>(null);
 
-  const handleCreateBooking = () => {
+  const handleCreateBooking = async () => {
     let clientId = selectedClientId;
 
     if (showNewClientForm) {
-      const createdClient = store.addClient(newClient);
-      clientId = createdClient.id;
+      const createdClient = await store.addClient(newClient);
+      if (createdClient) {
+        clientId = createdClient.id;
+      }
     }
 
     if (!clientId || !selectedServiceId || !date || !time || !observations) {
@@ -97,9 +99,9 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     };
 
     if (editingBooking) {
-      store.updateBooking(editingBooking.id, bookingData);
+      await store.updateBooking(editingBooking.id, bookingData);
     } else {
-      store.addBooking(bookingData);
+      await store.addBooking(bookingData);
     }
 
     // Generate WhatsApp message
@@ -107,7 +109,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     const service = store.serviceTypes.find(s => s.id === selectedServiceId);
     
     if (client && service) {
-      const message = `Olá ${client.name}, seu serviço de ${service.name} foi ${editingBooking ? 'atualizado' : 'agendado'} para o dia ${new Date(date).toLocaleDateString('pt-BR')} às ${time}. Qualquer dúvida estamos à disposição. Norb Serviços.`;
+      const message = `Olá ${client.name}, seu serviço de ${service.name} foi ${editingBooking ? 'atualizado' : 'agendado'} para o dia ${new Date(date).toLocaleDateString('pt-BR')} às ${time}. Qualquer dúvida estamos à disposição. NORB Gestão Pro.`;
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/55${client.phone.replace(/\D/g, '')}?text=${encodedMessage}`;
       

@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "Information about a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "gender": { "type": "string", "enum": ["masculino", "feminino"] },
+        "observations": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner of the record" }
+      },
+      "required": ["id", "name", "phone", "address", "city", "gender", "createdAt", "uid"]
+    },
+    "ServiceType": {
+      "title": "ServiceType",
+      "description": "Available service types",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "defaultPrice": { "type": "number" },
+        "estimatedTime": { "type": "string" },
+        "active": { "type": "boolean" },
+        "uid": { "type": "string", "description": "Owner of the record" }
+      },
+      "required": ["id", "name", "defaultPrice", "estimatedTime", "active", "uid"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A service booking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "serviceTypeId": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "originalPrice": { "type": "number" },
+        "discount": { "type": "number" },
+        "coupon": { "type": "string" },
+        "finalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["agendado", "pendente", "concluído", "cancelado", "perdido"] },
+        "paymentMethod": { "type": "string", "enum": ["pix", "dinheiro", "cartão"] },
+        "lostReason": { "type": "string" },
+        "observations": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner of the record" }
+      },
+      "required": ["id", "clientId", "serviceTypeId", "date", "time", "originalPrice", "discount", "finalPrice", "status", "createdAt", "uid"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "A business expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string", "enum": ["investimento", "operacional", "manutenção", "outro"] },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner of the record" }
+      },
+      "required": ["id", "description", "amount", "category", "date", "createdAt", "uid"]
+    }
+  },
+  "firestore": {
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "User clients"
+    },
+    "/serviceTypes/{serviceTypeId}": {
+      "schema": "ServiceType",
+      "description": "User service types"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "User bookings"
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "User expenses"
+    }
+  }
+}

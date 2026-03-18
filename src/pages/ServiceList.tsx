@@ -143,12 +143,6 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
       {completionConfirm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-200 relative text-center">
-            <button 
-              onClick={() => setCompletionConfirm(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <XCircle size={24} />
-            </button>
             <div className="w-16 h-16 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center mb-6 mx-auto">
               <CheckCircle2 size={32} />
             </div>
@@ -335,13 +329,15 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
                   <Edit2 size={14} className="mr-1" />
                   Editar
                 </button>
-                <button 
-                  onClick={() => setDeleteConfirm(booking.id)}
-                  className="flex items-center justify-center py-2 px-3 rounded-xl bg-white border border-slate-200 text-red-500 text-xs font-bold hover:bg-red-50 transition-colors col-span-2"
-                >
-                  <Trash2 size={14} className="mr-1" />
-                  Excluir Agendamento
-                </button>
+                {booking.status !== 'concluído' && (
+                  <button 
+                    onClick={() => setDeleteConfirm(booking.id)}
+                    className="flex items-center justify-center py-2 px-3 rounded-xl bg-white border border-slate-200 text-red-500 text-xs font-bold hover:bg-red-50 transition-colors col-span-2"
+                  >
+                    <Trash2 size={14} className="mr-1" />
+                    Excluir Agendamento
+                  </button>
+                )}
               </div>
             </div>
           );

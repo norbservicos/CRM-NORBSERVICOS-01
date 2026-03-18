@@ -3,9 +3,16 @@ import React from 'react';
 interface LogoProps {
   className?: string;
   collapsed?: boolean;
+  variant?: 'light' | 'dark';
 }
 
-export const Logo: React.FC<LogoProps> = ({ className, collapsed }) => {
+export const Logo: React.FC<LogoProps> = ({ className, collapsed, variant = 'dark' }) => {
+  const isLight = variant === 'light';
+  const mainColor = isLight ? 'black' : 'white';
+  const textColor = isLight ? 'text-slate-900' : 'text-white';
+  const subTextColor = isLight ? 'text-blue-600' : 'text-blue-400';
+  const lineColor = isLight ? 'bg-blue-200' : 'bg-blue-500/50';
+
   if (collapsed) {
     return (
       <div className={`flex items-center justify-center ${className}`}>
@@ -24,7 +31,7 @@ export const Logo: React.FC<LogoProps> = ({ className, collapsed }) => {
           <path 
             d="M35 70V30L65 70V30" 
             fill="none" 
-            stroke="white" 
+            stroke={mainColor} 
             strokeWidth="8" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
@@ -66,7 +73,7 @@ export const Logo: React.FC<LogoProps> = ({ className, collapsed }) => {
           <path 
             d="M35 70V30L65 70V30" 
             fill="none" 
-            stroke="white" 
+            stroke={mainColor} 
             strokeWidth="8" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
@@ -80,11 +87,11 @@ export const Logo: React.FC<LogoProps> = ({ className, collapsed }) => {
         </svg>
       </div>
       <div className="flex flex-col">
-        <span className="text-2xl font-black tracking-tighter text-white leading-none">NORB</span>
+        <span className={`text-2xl font-black tracking-tighter ${textColor} leading-none`}>NORB</span>
         <div className="flex items-center">
-          <div className="h-[1px] flex-1 bg-blue-500/50"></div>
-          <span className="text-[10px] font-bold tracking-[0.2em] text-blue-400 px-2 uppercase">Serviços</span>
-          <div className="h-[1px] flex-1 bg-blue-500/50"></div>
+          <div className={`h-[1px] flex-1 ${lineColor}`}></div>
+          <span className={`text-[9px] font-bold tracking-[0.15em] ${subTextColor} px-2 uppercase whitespace-nowrap`}>Gestão Pro</span>
+          <div className={`h-[1px] flex-1 ${lineColor}`}></div>
         </div>
       </div>
     </div>

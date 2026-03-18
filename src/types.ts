@@ -11,6 +11,7 @@ export interface Client {
   gender: Gender;
   observations?: string;
   createdAt: string;
+  uid: string;
 }
 
 export interface ServiceType {
@@ -20,6 +21,7 @@ export interface ServiceType {
   defaultPrice: number;
   estimatedTime: string;
   active: boolean;
+  uid: string;
 }
 
 export interface Booking {
@@ -37,6 +39,7 @@ export interface Booking {
   lostReason?: string;
   observations?: string;
   createdAt: string;
+  uid: string;
 }
 
 export type ExpenseCategory = 'investimento' | 'operacional' | 'manutenção' | 'outro';
@@ -48,6 +51,7 @@ export interface Expense {
   category: ExpenseCategory;
   date: string;
   createdAt: string;
+  uid: string;
 }
 
 export interface DashboardStats {

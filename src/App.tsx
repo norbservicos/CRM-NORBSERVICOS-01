@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,8 +10,13 @@ import {
   Menu, 
   X,
   PlusCircle,
-  Search
+  Search,
+  LogIn,
+  LogOut,
+  AlertCircle
 } from 'lucide-react';
+import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { auth } from './firebase';
 import { cn } from './utils/utils';
 import { Logo } from './components/Logo';
 import Dashboard from './pages/Dashboard';
@@ -23,17 +28,92 @@ import Agenda from './pages/Agenda';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
-import { Client, ServiceType, Booking } from './types';
+import { Booking } from './types';
 import { useStore } from './hooks/useStore';
+
+// Error Boundary Component
+class ErrorBoundary extends (React.Component as any) {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Ocorreu um erro inesperado.";
+      try {
+        const parsed = JSON.parse(this.state.error?.message || "");
+        if (parsed.error && parsed.error.includes("insufficient permissions")) {
+          errorMessage = "Você não tem permissão para realizar esta ação ou acessar estes dados.";
+        }
+      } catch {
+        // Not a JSON error
+      }
+
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Ops! Algo deu errado</h2>
+            <p className="text-slate-600 mb-8">{errorMessage}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full px-6 py-3 rounded-2xl font-bold bg-blue-900 text-white hover:bg-black transition-all shadow-lg shadow-blue-900/20"
+            >
+              Recarregar Aplicativo
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses';
 
-export default function App() {
+function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const store = useStore();
+
+  const handleLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      // Ignore cancellation errors as they are usually user-triggered or race conditions
+      if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+        console.error('Login error:', error);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const handleEditBooking = (booking: Booking) => {
     setEditingBooking(booking);
@@ -44,6 +124,57 @@ export default function App() {
     setEditingBooking(null);
     setActiveTab('booking');
   };
+
+  if (!store.isAuthReady) {
+    return (
+      <div className="min-h-screen bg-blue-900 flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <Logo collapsed={false} />
+          <div className="mt-8 w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!store.user) {
+    return (
+      <div className="min-h-screen bg-blue-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] p-12 max-w-md w-full shadow-2xl text-center space-y-8">
+          <div className="flex justify-center">
+            <Logo collapsed={false} variant="light" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-900 mb-2">Bem-vindo!</h2>
+            <p className="text-slate-500">Faça login para gerenciar seus serviços e clientes com segurança.</p>
+          </div>
+          <button 
+            onClick={handleLogin}
+            disabled={isLoggingIn}
+            className="w-full flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold bg-blue-900 text-white hover:bg-black transition-all shadow-xl shadow-blue-900/20 group disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoggingIn ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <LogIn size={20} className="group-hover:translate-x-1 transition-transform" />
+            )}
+            {isLoggingIn ? 'Conectando...' : 'Entrar com Google'}
+          </button>
+          <p className="text-xs text-slate-400">Ao entrar, você concorda com nossos termos de uso.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (store.loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium animate-pulse">Carregando seus dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,22 +189,17 @@ export default function App() {
   ];
 
   const renderContent = () => {
-    try {
-      switch (activeTab) {
-        case 'dashboard': return <Dashboard store={store} setActiveTab={setActiveTab} />;
-        case 'clients': return <Clients store={store} />;
-        case 'catalog': return <Catalog store={store} />;
-        case 'booking': return <BookingForm store={store} setActiveTab={setActiveTab} editingBooking={editingBooking} setEditingBooking={setEditingBooking} />;
-        case 'services': return <ServiceList store={store} onEdit={handleEditBooking} />;
-        case 'agenda': return <Agenda store={store} />;
-        case 'finance': return <Finance store={store} />;
-        case 'expenses': return <Expenses store={store} />;
-        case 'reports': return <Reports store={store} />;
-        default: return <Dashboard store={store} setActiveTab={setActiveTab} />;
-      }
-    } catch (error) {
-      console.error('Render error:', error);
-      return <div className="p-8 text-red-500">Erro ao carregar módulo: {String(error)}</div>;
+    switch (activeTab) {
+      case 'dashboard': return <Dashboard store={store} setActiveTab={setActiveTab} />;
+      case 'clients': return <Clients store={store} />;
+      case 'catalog': return <Catalog store={store} />;
+      case 'booking': return <BookingForm store={store} setActiveTab={setActiveTab} editingBooking={editingBooking} setEditingBooking={setEditingBooking} />;
+      case 'services': return <ServiceList store={store} onEdit={handleEditBooking} />;
+      case 'agenda': return <Agenda store={store} />;
+      case 'finance': return <Finance store={store} />;
+      case 'expenses': return <Expenses store={store} />;
+      case 'reports': return <Reports store={store} />;
+      default: return <Dashboard store={store} setActiveTab={setActiveTab} />;
     }
   };
 
@@ -129,13 +255,30 @@ export default function App() {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className={cn("flex items-center", isSidebarOpen ? "space-x-3" : "justify-center")}>
-            <div className="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center font-bold text-xs">NS</div>
-            {isSidebarOpen && (
-              <div className="overflow-hidden">
-                <p className="text-sm font-medium truncate">Admin Norb</p>
-                <p className="text-xs text-slate-400 truncate">contato@norb.com</p>
+          <div className={cn("flex items-center justify-between", !isSidebarOpen && "flex-col space-y-4")}>
+            <div className={cn("flex items-center", isSidebarOpen ? "space-x-3" : "justify-center")}>
+              <div className="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center font-bold text-xs overflow-hidden">
+                {store.user.photoURL ? (
+                  <img src={store.user.photoURL} alt="User" referrerPolicy="no-referrer" />
+                ) : (
+                  store.user.displayName?.charAt(0) || 'U'
+                )}
               </div>
+              {isSidebarOpen && (
+                <div className="overflow-hidden">
+                  <p className="text-sm font-medium truncate">{store.user.displayName}</p>
+                  <p className="text-xs text-slate-400 truncate">{store.user.email}</p>
+                </div>
+              )}
+            </div>
+            {isSidebarOpen && (
+              <button 
+                onClick={handleLogout}
+                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                title="Sair"
+              >
+                <LogOut size={18} />
+              </button>
             )}
           </div>
         </div>
@@ -184,5 +327,13 @@ export default function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
   );
 }
