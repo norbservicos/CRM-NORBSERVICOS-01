@@ -23,8 +23,6 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    defaultPrice: 0,
-    estimatedTime: '',
     active: true
   });
 
@@ -34,13 +32,11 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
       setFormData({
         name: service.name,
         description: service.description,
-        defaultPrice: service.defaultPrice,
-        estimatedTime: service.estimatedTime,
         active: service.active
       });
     } else {
       setEditingService(null);
-      setFormData({ name: '', description: '', defaultPrice: 0, estimatedTime: '', active: true });
+      setFormData({ name: '', description: '', active: true });
     }
     setIsModalOpen(true);
   };
@@ -154,17 +150,6 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
 
             <h3 className="text-lg font-bold text-slate-900 mb-2"><span>{service.name}</span></h3>
             <p className="text-sm text-slate-500 mb-6 line-clamp-2 h-10"><span>{service.description}</span></p>
-
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-              <div className="flex items-center text-slate-600">
-                <DollarSign size={16} className="mr-2 text-blue-900" />
-                <span className="text-sm font-bold"><span>{formatCurrency(service.defaultPrice)}</span></span>
-              </div>
-              <div className="flex items-center text-slate-600">
-                <Clock size={16} className="mr-2 text-blue-500" />
-                <span className="text-sm font-medium"><span>{service.estimatedTime}</span>h</span>
-              </div>
-            </div>
           </div>
         ))}
         {store.serviceTypes.length === 0 && (
@@ -217,30 +202,6 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor Padrão (R$)</label>
-                  <input 
-                    required
-                    type="number" 
-                    step="0.01"
-                    className="w-full rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
-                    value={formData.defaultPrice}
-                    onChange={(e) => setFormData({...formData, defaultPrice: parseFloat(e.target.value)})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tempo Estimado</label>
-                  <input 
-                    required
-                    type="text" 
-                    placeholder="02:00"
-                    className="w-full rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
-                    value={formData.estimatedTime}
-                    onChange={(e) => setFormData({...formData, estimatedTime: e.target.value})}
-                  />
-                </div>
               </div>
               <div className="flex items-center space-x-3 pt-2">
                 <input 

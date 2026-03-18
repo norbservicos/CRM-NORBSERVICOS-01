@@ -28,6 +28,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
   const [selectedClientId, setSelectedClientId] = useState(editingBooking?.clientId || '');
   const [clientSearch, setClientSearch] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState(editingBooking?.serviceTypeId || '');
+  const [manualPrice, setManualPrice] = useState<number | null>(editingBooking?.originalPrice || null);
   const [date, setDate] = useState(editingBooking?.date || '');
   const [time, setTime] = useState(editingBooking?.time || '');
   const [discount, setDiscount] = useState(editingBooking?.discount || 0);
@@ -41,6 +42,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     if (editingBooking) {
       setSelectedClientId(editingBooking.clientId);
       setSelectedServiceId(editingBooking.serviceTypeId);
+      setManualPrice(editingBooking.originalPrice);
       setDate(editingBooking.date);
       setTime(editingBooking.time);
       setDiscount(editingBooking.discount);
@@ -61,11 +63,12 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
   [selectedServiceId, store.serviceTypes]);
 
   const finalPrice = useMemo(() => {
-    if (!selectedService) return 0;
-    let price = selectedService.defaultPrice - discount;
+    if (!selectedService && manualPrice === null) return 0;
+    const basePrice = manualPrice !== null ? manualPrice : (selectedService?.defaultPrice || 0);
+    let price = basePrice - discount;
     if (coupon.toUpperCase() === 'NORB10') price *= 0.9;
     return Math.max(0, price);
-  }, [selectedService, discount, coupon]);
+  }, [selectedService, manualPrice, discount, coupon]);
 
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error', onConfirm?: () => void } | null>(null);
 
@@ -107,7 +110,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
       serviceTypeId: selectedServiceId,
       date,
       time,
-      originalPrice: selectedService?.defaultPrice || 0,
+      originalPrice: manualPrice !== null ? manualPrice : (selectedService?.defaultPrice || 0),
       discount,
       coupon,
       finalPrice,
@@ -300,7 +303,13 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <h3 className="text-xl font-bold">2. Selecionar Serviço</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {store.serviceTypes.filter(s => s.active).map(service => (
+              {store.serviceTypes
+                .filter(s => s.active && [
+                  'Limpeza de ar condicionado', 
+                  'Limpeza de estofado', 
+                  'Desmontagem e montagem de moveis'
+                ].includes(s.name))
+                .map(service => (
                 <button
                   key={service.id}
                   onClick={() => setSelectedServiceId(service.id)}
@@ -313,13 +322,8 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                 >
                   <div className="flex justify-between items-start mb-2">
                     <p className="font-bold text-slate-900"><span>{service.name}</span></p>
-                    <p className="text-sm font-bold text-blue-900"><span>{formatCurrency(service.defaultPrice)}</span></p>
                   </div>
                   <p className="text-xs text-slate-500 line-clamp-2">{service.description}</p>
-                  <div className="mt-3 flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <Clock size={12} className="mr-1" />
-                    <span>{service.estimatedTime}</span>h estimado
-                  </div>
                 </button>
               ))}
             </div>
@@ -381,9 +385,18 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   Resumo Financeiro
                 </h4>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Valor Original</span>
-                    <span className="font-medium"><span>{formatCurrency(selectedService?.defaultPrice || 0)}</span></span>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Preço Acordado (R$) *</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                      <input 
+                        type="number" 
+                        placeholder="0,00"
+                        className="w-full pl-10 rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900 font-bold text-blue-900"
+                        value={manualPrice === null ? '' : manualPrice}
+                        onChange={(e) => setManualPrice(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input 

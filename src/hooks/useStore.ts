@@ -66,10 +66,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 const INITIAL_SERVICE_TYPES: Omit<ServiceType, 'uid'>[] = [
-  { id: '1', name: 'Limpeza de Sofá', description: 'Limpeza profunda e higienização de estofados.', defaultPrice: 250, estimatedTime: '02:00', active: true },
-  { id: '2', name: 'Limpeza de Colchão', description: 'Remoção de ácaros e manchas de colchões.', defaultPrice: 180, estimatedTime: '01:30', active: true },
-  { id: '3', name: 'Limpeza de Ar-condicionado', description: 'Limpeza completa de filtros e serpentina.', defaultPrice: 150, estimatedTime: '01:00', active: true },
-  { id: '4', name: 'Montagem de Móveis', description: 'Montagem profissional de móveis diversos.', defaultPrice: 120, estimatedTime: '02:00', active: true },
+  { id: '1', name: 'Limpeza de ar condicionado', description: 'Limpeza completa de filtros e serpentina.', defaultPrice: 0, estimatedTime: '01:00', active: true },
+  { id: '2', name: 'Limpeza de estofado', description: 'Limpeza profunda e higienização de estofados.', defaultPrice: 0, estimatedTime: '02:00', active: true },
+  { id: '3', name: 'Desmontagem e montagem de moveis', description: 'Serviço profissional de desmontagem e montagem.', defaultPrice: 0, estimatedTime: '02:00', active: true },
 ];
 
 export function useStore() {

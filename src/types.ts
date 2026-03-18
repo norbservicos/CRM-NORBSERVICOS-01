@@ -18,8 +18,8 @@ export interface ServiceType {
   id: string;
   name: string;
   description: string;
-  defaultPrice: number;
-  estimatedTime: string;
+  defaultPrice?: number;
+  estimatedTime?: string;
   active: boolean;
   uid: string;
 }
