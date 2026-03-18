@@ -84,18 +84,25 @@ export function useStore() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email?.toLowerCase() !== 'guilhermed952@gmail.com') {
-        signOut(auth);
-        setUser(null);
-        setIsUnauthorized(true);
+      if (user) {
+        if (user.email?.toLowerCase() !== 'guilhermed952@gmail.com') {
+          // Wrong user!
+          signOut(auth);
+          setUser(null);
+          setIsUnauthorized(true);
+          setIsAuthReady(true);
+          setLoading(false);
+          return;
+        }
+        // Authorized user
+        setUser(user);
+        setIsUnauthorized(false);
         setIsAuthReady(true);
-        return;
-      }
-      
-      setUser(user);
-      setIsUnauthorized(false);
-      setIsAuthReady(true);
-      if (!user) {
+      } else {
+        // No user
+        setUser(null);
+        // We don't reset isUnauthorized here to keep the error message visible if they just failed
+        setIsAuthReady(true);
         setClients([]);
         setServiceTypes([]);
         setBookings([]);
@@ -107,7 +114,7 @@ export function useStore() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthReady || !user) return;
+    if (!isAuthReady || !user || isUnauthorized) return;
 
     setLoading(true);
 
@@ -284,10 +291,13 @@ export function useStore() {
     }
   };
 
+  const resetUnauthorized = () => setIsUnauthorized(false);
+
   return {
     user,
     isAuthReady,
     isUnauthorized,
+    resetUnauthorized,
     loading,
     clients,
     serviceTypes,

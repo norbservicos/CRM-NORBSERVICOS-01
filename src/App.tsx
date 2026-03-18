@@ -106,6 +106,7 @@ function MainApp() {
   const handleLogin = async () => {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
+    store.resetUnauthorized(); // Reset unauthorized state when starting a new login attempt
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -163,9 +164,14 @@ function MainApp() {
           {store.isUnauthorized && (
             <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-left animate-in fade-in slide-in-from-top-2 duration-300">
               <AlertCircle className="text-red-500 shrink-0" size={20} />
-              <p className="text-xs font-bold text-red-600">
-                Acesso negado. Somente o administrador guilhermed952@gmail.com tem permissão para acessar este sistema.
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-red-600">
+                  Acesso negado.
+                </p>
+                <p className="text-[10px] text-red-500 leading-tight">
+                  Somente o administrador guilhermed952@gmail.com tem permissão para acessar este sistema.
+                </p>
+              </div>
             </div>
           )}
 
