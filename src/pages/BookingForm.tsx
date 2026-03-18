@@ -76,9 +76,18 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     let clientId = selectedClientId;
 
     if (showNewClientForm) {
-      const createdClient = await store.addClient(newClient);
-      if (createdClient) {
-        clientId = createdClient.id;
+      try {
+        const createdClient = await store.addClient(newClient);
+        if (createdClient) {
+          clientId = createdClient.id;
+        }
+      } catch (err: any) {
+        if (err.message === 'CLIENT_EXISTS') {
+          setNotification({ message: 'Este cliente já está cadastrado (mesmo nome e telefone). Por favor, use a busca para selecioná-lo.', type: 'error' });
+          return;
+        }
+        setNotification({ message: 'Ocorreu um erro ao cadastrar o cliente.', type: 'error' });
+        return;
       }
     }
 
@@ -304,11 +313,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
             <h3 className="text-xl font-bold">2. Selecionar Serviço</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {store.serviceTypes
-                .filter(s => s.active && [
-                  'Limpeza de ar condicionado', 
-                  'Limpeza de estofado', 
-                  'Desmontagem e montagem de moveis'
-                ].includes(s.name))
+                .filter(s => s.active)
                 .map(service => (
                 <button
                   key={service.id}

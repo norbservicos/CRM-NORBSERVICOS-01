@@ -20,6 +20,7 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
   const [editingService, setEditingService] = useState<ServiceType | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,6 +28,7 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
   });
 
   const handleOpenModal = (service?: ServiceType) => {
+    setError(null);
     if (service) {
       setEditingService(service);
       setFormData({
@@ -41,15 +43,24 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingService) {
-      store.updateServiceType(editingService.id, formData);
-      setShowSuccess(true);
-    } else {
-      store.addServiceType(formData);
+    setError(null);
+    try {
+      if (editingService) {
+        await store.updateServiceType(editingService.id, formData);
+        setShowSuccess(true);
+      } else {
+        await store.addServiceType(formData);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      if (err.message === 'SERVICE_EXISTS') {
+        setError('Este serviço já está cadastrado no catálogo.');
+      } else {
+        setError('Ocorreu um erro ao salvar o serviço.');
+      }
     }
-    setIsModalOpen(false);
   };
 
   const confirmDelete = () => {
@@ -181,6 +192,12 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Serviço</label>
                 <input 

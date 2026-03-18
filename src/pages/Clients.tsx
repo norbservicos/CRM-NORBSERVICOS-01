@@ -10,7 +10,8 @@ import {
   MessageSquare,
   X,
   CheckCircle2,
-  Calendar
+  Calendar,
+  AlertCircle
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { Logo } from '../components/Logo';
@@ -25,6 +26,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -56,6 +58,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
   );
 
   const handleOpenModal = (client?: Client) => {
+    setError(null);
     if (client) {
       setEditingClient(client);
       setFormData({
@@ -73,15 +76,24 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingClient) {
-      store.updateClient(editingClient.id, formData);
-      setShowSuccess(true);
-    } else {
-      store.addClient(formData);
+    setError(null);
+    try {
+      if (editingClient) {
+        await store.updateClient(editingClient.id, formData);
+        setShowSuccess(true);
+      } else {
+        await store.addClient(formData);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      if (err.message === 'CLIENT_EXISTS') {
+        setError('Este cliente já está cadastrado (mesmo nome e telefone).');
+      } else {
+        setError('Ocorreu um erro ao salvar o cliente.');
+      }
     }
-    setIsModalOpen(false);
   };
 
   const confirmDelete = () => {
@@ -353,6 +365,12 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome Completo</label>
                 <input 

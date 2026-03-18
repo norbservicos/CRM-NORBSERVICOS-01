@@ -124,6 +124,8 @@ export function useStore() {
 
     const qServiceTypes = query(collection(db, 'serviceTypes'), where('uid', '==', user.uid));
     const unsubServiceTypes = onSnapshot(qServiceTypes, async (snapshot) => {
+      const services = snapshot.docs.map(doc => doc.data() as ServiceType);
+      
       if (snapshot.empty) {
         // Seed initial service types if none exist for this user
         for (const st of INITIAL_SERVICE_TYPES) {
@@ -131,7 +133,30 @@ export function useStore() {
           await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
         }
       } else {
-        setServiceTypes(snapshot.docs.map(doc => doc.data() as ServiceType));
+        // Ensure the 3 specific services exist (by name check)
+        const currentNames = services.map(s => s.name.toLowerCase());
+        let neededSeeding = false;
+        
+        for (const st of INITIAL_SERVICE_TYPES) {
+          if (!currentNames.includes(st.name.toLowerCase())) {
+            neededSeeding = true;
+            const id = crypto.randomUUID();
+            await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
+          }
+        }
+        
+        // Deactivate services not in the list (optional, but helps "leave only")
+        const allowedNames = INITIAL_SERVICE_TYPES.map(s => s.name.toLowerCase());
+        for (const s of services) {
+          if (s.active && !allowedNames.includes(s.name.toLowerCase())) {
+            await updateDoc(doc(db, 'serviceTypes', s.id), { active: false });
+          }
+        }
+        
+        // If we didn't need to seed anything new, set the state
+        if (!neededSeeding) {
+          setServiceTypes(services);
+        }
       }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'serviceTypes'));
 
@@ -161,10 +186,14 @@ export function useStore() {
   const addClient = async (client: Omit<Client, 'id' | 'createdAt' | 'uid'>) => {
     if (!user) return;
 
-    // Check for duplicate phone number
-    const existingClient = clients.find(c => c.phone.replace(/\D/g, '') === client.phone.replace(/\D/g, ''));
+    // Check for duplicate name and phone number
+    const existingClient = clients.find(c => 
+      c.name.toLowerCase() === client.name.toLowerCase() && 
+      c.phone.replace(/\D/g, '') === client.phone.replace(/\D/g, '')
+    );
+    
     if (existingClient) {
-      return existingClient;
+      throw new Error('CLIENT_EXISTS');
     }
 
     const id = crypto.randomUUID();
@@ -200,6 +229,16 @@ export function useStore() {
 
   const addServiceType = async (service: Omit<ServiceType, 'id' | 'uid'>) => {
     if (!user) return;
+
+    // Check for duplicate service name
+    const existingService = serviceTypes.find(s => 
+      s.name.toLowerCase() === service.name.toLowerCase()
+    );
+
+    if (existingService) {
+      throw new Error('SERVICE_EXISTS');
+    }
+
     const id = crypto.randomUUID();
     try {
       await setDoc(doc(db, 'serviceTypes', id), { ...service, id, uid: user.uid });
