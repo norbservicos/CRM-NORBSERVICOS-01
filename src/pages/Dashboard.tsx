@@ -175,8 +175,9 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <div className="bg-slate-900 p-3 rounded-2xl shadow-xl shadow-slate-900/10">
+          <div className="bg-slate-900 p-3 rounded-2xl shadow-xl shadow-slate-900/10 relative group">
             <Logo collapsed className="w-12 h-12" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" title="Conexão Segura" />
           </div>
           <div>
             <h2 className="text-3xl font-bold text-slate-900">Olá, NORB!</h2>
