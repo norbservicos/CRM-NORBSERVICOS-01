@@ -227,9 +227,7 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
           >
             <option value="all">Todos os Status</option>
             <option value="agendado">Agendados</option>
-            <option value="pendente">Pendentes</option>
             <option value="concluído">Concluídos</option>
-            <option value="cancelado">Cancelados</option>
             <option value="perdido">Perdidos</option>
           </select>
         </div>
