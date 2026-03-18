@@ -23,7 +23,9 @@ service cloud.firestore {
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && 
+             request.auth.token.email == "guilhermed952@gmail.com" && 
+             request.auth.token.email_verified == true;
     }
 
     function isOwner(userId) {

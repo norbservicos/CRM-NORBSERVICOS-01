@@ -159,6 +159,16 @@ function MainApp() {
             <h2 className="text-3xl font-black text-slate-900 mb-2">Bem-vindo!</h2>
             <p className="text-slate-500">Faça login para gerenciar seus serviços e clientes com segurança.</p>
           </div>
+          
+          {store.isUnauthorized && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-left animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-xs font-bold text-red-600">
+                Acesso negado. Somente o administrador guilhermed952@gmail.com tem permissão para acessar este sistema.
+              </p>
+            </div>
+          )}
+
           <button 
             onClick={handleLogin}
             disabled={isLoggingIn}

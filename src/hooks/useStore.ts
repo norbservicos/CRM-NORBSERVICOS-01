@@ -10,7 +10,7 @@ import {
   where,
   getDocs
 } from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import type { Client, ServiceType, Booking, Expense } from '../types';
 
@@ -75,6 +75,7 @@ const INITIAL_SERVICE_TYPES: Omit<ServiceType, 'uid'>[] = [
 export function useStore() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -83,7 +84,16 @@ export function useStore() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email !== 'guilhermed952@gmail.com') {
+        signOut(auth);
+        setUser(null);
+        setIsUnauthorized(true);
+        setIsAuthReady(true);
+        return;
+      }
+      
       setUser(user);
+      setIsUnauthorized(false);
       setIsAuthReady(true);
       if (!user) {
         setClients([]);
@@ -277,6 +287,7 @@ export function useStore() {
   return {
     user,
     isAuthReady,
+    isUnauthorized,
     loading,
     clients,
     serviceTypes,
