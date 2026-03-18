@@ -84,7 +84,7 @@ export function useStore() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email !== 'guilhermed952@gmail.com') {
+      if (user && user.email?.toLowerCase() !== 'guilhermed952@gmail.com') {
         signOut(auth);
         setUser(null);
         setIsUnauthorized(true);
