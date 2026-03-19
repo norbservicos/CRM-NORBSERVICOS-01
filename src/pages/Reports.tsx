@@ -145,24 +145,24 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
   };
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Relatórios e Histórico</h2>
-          <p className="text-slate-500">Acompanhe o desempenho e histórico de atendimentos.</p>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900">Relatórios e Histórico</h2>
+          <p className="text-xs md:text-sm text-slate-500">Acompanhe o desempenho e histórico de atendimentos.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
             <button 
               onClick={() => changeMonth(-1)}
               className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
             >
               <ChevronLeft size={20} />
             </button>
-            <div className="px-4 text-center min-w-[140px]">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Período</p>
-              <p className="font-black text-slate-900 capitalize">
+            <div className="px-4 text-center min-w-[120px]">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Período</p>
+              <p className="text-sm font-black text-slate-900 capitalize">
                 {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
               </p>
             </div>
@@ -176,18 +176,18 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
 
           <button 
             onClick={exportPDF}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold flex items-center transition-all shadow-lg"
+            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center transition-all shadow-lg text-sm"
           >
-            <Download size={20} className="mr-2" />
+            <Download size={18} className="mr-2" />
             Exportar PDF
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
         {/* Top Services */}
-        <div className="md:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold mb-6 flex items-center">
+        <div className="md:col-span-2 bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <h3 className="text-base md:text-lg font-bold mb-6 flex items-center">
             <Award size={20} className="mr-2 text-amber-500" />
             Serviços Mais Vendidos
           </h3>
@@ -197,15 +197,15 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                 <div key={service.id} className="space-y-2">
                   <div className="flex justify-between items-end">
                     <div>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">#{index + 1}</span>
-                      <p className="font-bold text-slate-900">{service.name}</p>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">#{index + 1}</span>
+                      <p className="text-sm font-bold text-slate-900">{service.name}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black text-slate-900">{service.count} vendas</p>
-                      <p className="text-xs text-blue-900 font-bold">{formatCurrency(service.revenue)}</p>
+                      <p className="text-xs font-black text-slate-900">{service.count} vendas</p>
+                      <p className="text-[10px] text-blue-900 font-bold">{formatCurrency(service.revenue)}</p>
                     </div>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-900 rounded-full transition-all duration-1000" 
                       style={{ width: `${(service.count / (stats.serviceCounts[0]?.count || 1)) * 100}%` }}
@@ -214,36 +214,36 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                 </div>
               ))
             ) : (
-              <p className="text-slate-400 text-center py-10">Nenhum serviço realizado neste período.</p>
+              <p className="text-slate-400 text-center py-10 text-sm">Nenhum serviço realizado neste período.</p>
             )}
           </div>
         </div>
 
         {/* Quick Stats */}
-        <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:gap-6">
           <ReportStat 
-            title="Total de Clientes" 
+            title="Clientes" 
             value={stats.totalClients} 
             icon={Users} 
             color="text-blue-600" 
             bgColor="bg-blue-50" 
           />
           <ReportStat 
-            title="Lucro no Período" 
+            title="Lucro" 
             value={formatCurrency(stats.profit)} 
             icon={TrendingUp} 
             color="text-emerald-600" 
             bgColor="bg-emerald-50" 
           />
           <ReportStat 
-            title="Gastos no Período" 
+            title="Gastos" 
             value={formatCurrency(stats.totalExpenses)} 
             icon={ArrowDownRight} 
             color="text-red-600" 
             bgColor="bg-red-50" 
           />
           <ReportStat 
-            title="Média por Serviço" 
+            title="Média" 
             value={formatCurrency(stats.avgValue)} 
             icon={Star} 
             color="text-amber-600" 
@@ -254,16 +254,18 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
 
       {/* Detailed History for Follow-up */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-lg font-bold flex items-center">
+        <div className="p-4 md:p-8 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base md:text-lg font-bold flex items-center">
             <Calendar size={20} className="mr-2 text-blue-600" />
-            Histórico de Atendimentos e Follow-up
+            Histórico e Follow-up
           </h3>
-          <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
+          <span className="px-3 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full">
             {stats.periodBookings.length} atendimentos
           </span>
         </div>
-        <div className="overflow-x-auto">
+        
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
@@ -321,17 +323,10 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
-                              title="WhatsApp Follow-up"
                             >
                               <MessageSquare size={18} />
                             </a>
                           )}
-                          <button 
-                            className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                            title="Ver Detalhes"
-                          >
-                            <FileText size={18} />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -347,6 +342,60 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {stats.periodBookings.length > 0 ? (
+            stats.periodBookings.map(booking => {
+              const client = store.clients.find(c => c.id === booking.clientId);
+              const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
+              return (
+                <div key={booking.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-xs font-bold text-slate-600">
+                        {client?.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{client?.name}</p>
+                        <p className="text-[10px] text-slate-400">{format(new Date(booking.date), 'dd/MM/yyyy')} • {booking.time}</p>
+                      </div>
+                    </div>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider",
+                      booking.status === 'concluído' ? "bg-emerald-50 text-emerald-700" :
+                      booking.status === 'agendado' ? "bg-blue-50 text-blue-700" :
+                      "bg-red-50 text-red-700"
+                    )}>
+                      {booking.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-xs font-medium text-slate-700">{service?.name}</span>
+                    <span className="text-sm font-black text-slate-900">{formatCurrency(booking.finalPrice)}</span>
+                  </div>
+                  {client?.phone && (
+                    <div className="flex justify-end pt-1">
+                      <a 
+                        href={`https://wa.me/55${client.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold"
+                      >
+                        <MessageSquare size={14} />
+                        WhatsApp Follow-up
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-10 text-center text-slate-400 text-sm">
+              Nenhum atendimento registrado para este período.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -354,13 +403,13 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
 
 function ReportStat({ title, value, icon: Icon, color, bgColor }: any) {
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center space-x-4">
-      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", bgColor, color)}>
-        <Icon size={24} />
+    <div className="bg-white p-4 md:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center space-x-3 md:space-x-4">
+      <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0", bgColor, color)}>
+        <Icon size={20} className="md:w-6 md:h-6" />
       </div>
-      <div>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</p>
-        <p className="text-xl font-black text-slate-900">{value}</p>
+      <div className="min-w-0">
+        <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">{title}</p>
+        <p className="text-sm md:text-xl font-black text-slate-900 truncate">{value}</p>
       </div>
     </div>
   );

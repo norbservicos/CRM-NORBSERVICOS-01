@@ -182,7 +182,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
@@ -259,27 +259,86 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
                   </td>
                 </tr>
               ))}
-              {filteredClients.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <div className="bg-slate-100 p-6 rounded-full grayscale opacity-20">
-                        <Logo collapsed className="w-16 h-16" />
-                      </div>
-                      <p className="text-slate-400 italic font-medium">Nenhum cliente encontrado.</p>
-                      <button 
-                        onClick={() => handleOpenModal()}
-                        className="text-blue-900 font-bold hover:underline"
-                      >
-                        Cadastrar primeiro cliente
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredClients.map(client => (
+            <div key={client.id} className="p-4 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-slate-900"><span>{client.name}</span></p>
+                  <p className="text-[10px] text-slate-500 truncate max-w-[200px]"><span>{client.observations || 'Sem observações'}</span></p>
+                </div>
+                <button 
+                  onClick={() => openWhatsApp(client.phone)}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-900"
+                >
+                  <Phone size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Último Atendimento</p>
+                  {client.lastServiceDate ? (
+                    <p className="text-xs font-bold text-slate-900">
+                      {format(client.lastServiceDate, 'dd/MM/yyyy')}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Nenhum registro</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Localização</p>
+                  <p className="text-xs text-slate-600 truncate"><span>{client.city}</span></p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={() => setViewingHistory(client.id)}
+                  className="flex-1 flex items-center justify-center py-2 rounded-xl bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100"
+                >
+                  <Calendar size={14} className="mr-1" />
+                  Histórico
+                </button>
+                <button 
+                  onClick={() => handleOpenModal(client)}
+                  className="flex-1 flex items-center justify-center py-2 rounded-xl bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100"
+                >
+                  <Edit2 size={14} className="mr-1" />
+                  Editar
+                </button>
+                <button 
+                  onClick={() => setDeleteConfirm(client.id)}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 text-red-500 border border-red-100"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredClients.length === 0 && (
+          <div className="px-6 py-20 text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="bg-slate-100 p-6 rounded-full grayscale opacity-20">
+                <Logo collapsed className="w-16 h-16" />
+              </div>
+              <p className="text-slate-400 italic font-medium">Nenhum cliente encontrado.</p>
+              <button 
+                onClick={() => handleOpenModal()}
+                className="text-blue-900 font-bold hover:underline"
+              >
+                Cadastrar primeiro cliente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* History Modal */}

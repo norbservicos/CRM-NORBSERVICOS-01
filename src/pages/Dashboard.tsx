@@ -174,30 +174,31 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="bg-slate-900 p-3 rounded-2xl shadow-xl shadow-slate-900/10 relative group">
-            <Logo collapsed className="w-12 h-12" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" title="Conexão Segura" />
+        <div className="flex items-center space-x-3 md:space-x-4">
+          <div className="bg-slate-900 p-2 md:p-3 rounded-2xl shadow-xl shadow-slate-900/10 relative group shrink-0">
+            <Logo collapsed className="w-10 h-10 md:w-12 md:h-12" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" title="Conexão Segura" />
           </div>
-          <div>
-            <h2 className="text-3xl font-bold text-slate-900">Olá, NORB!</h2>
-            <p className="text-slate-500">Aqui está o que está acontecendo na sua empresa hoje.</p>
+          <div className="min-w-0">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">Olá, NORB!</h2>
+            <p className="text-xs md:text-sm text-slate-500 truncate">Aqui está o que está acontecendo hoje.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <button 
             onClick={() => setShowValues(!showValues)}
-            className="bg-white border border-slate-200 text-slate-700 p-2 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+            className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 p-2 rounded-xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center"
             title={showValues ? "Ocultar valores" : "Mostrar valores"}
           >
-            {showValues ? <EyeOff size={20} /> : <Eye size={20} />}
+            {showValues ? <EyeOff size={18} /> : <Eye size={18} />}
+            <span className="ml-2 text-xs font-bold md:hidden">{showValues ? "Ocultar" : "Mostrar"}</span>
           </button>
           <button 
             onClick={generateReport}
-            className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-medium flex items-center hover:bg-slate-50 transition-all shadow-sm"
+            className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center hover:bg-slate-50 transition-all shadow-sm"
           >
-            <Download size={18} className="mr-2" />
-            Gerar Relatório
+            <Download size={16} className="mr-2" />
+            Relatório
           </button>
         </div>
       </div>
@@ -235,7 +236,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard 
           title="Serviços Mês" 
           value={stats.totalMonth} 
@@ -455,12 +456,12 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
 
 function StatCard({ title, value, icon: Icon, color, showValue = true }: any) {
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
-      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg", color)}>
-        <Icon size={24} />
+    <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+      <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4 text-white shadow-lg", color)}>
+        <Icon size={20} className="md:w-6 md:h-6" />
       </div>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-black text-slate-900">
+      <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
+      <p className="text-lg md:text-2xl font-black text-slate-900 truncate">
         {showValue ? value : "••••••"}
       </p>
     </div>

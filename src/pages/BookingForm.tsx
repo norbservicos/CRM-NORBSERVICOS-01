@@ -223,27 +223,27 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
         </div>
       )}
 
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-slate-900">{editingBooking ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
-        <p className="text-slate-500">{editingBooking ? 'Altere as informações do serviço selecionado.' : 'Siga os passos para registrar um novo serviço.'}</p>
+      <div className="text-center space-y-1">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">{editingBooking ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
+        <p className="text-xs md:text-sm text-slate-500">{editingBooking ? 'Altere as informações do serviço selecionado.' : 'Siga os passos para registrar um novo serviço.'}</p>
       </div>
 
       {/* Stepper */}
-      <div className="flex items-center justify-center space-x-4 mb-8">
+      <div className="flex items-center justify-center space-x-2 md:space-x-4 mb-4 md:mb-8">
         {[1, 2, 3].map((s) => (
           <React.Fragment key={s}>
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all",
+              "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base font-bold transition-all",
               step >= s ? "bg-blue-900 text-white shadow-lg shadow-blue-900/20" : "bg-slate-200 text-slate-500"
             )}>
               <span>{s}</span>
             </div>
-            {s < 3 && <div className={cn("h-1 w-12 rounded-full", step > s ? "bg-blue-900" : "bg-slate-200")} />}
+            {s < 3 && <div className={cn("h-1 w-8 md:w-12 rounded-full", step > s ? "bg-blue-900" : "bg-slate-200")} />}
           </React.Fragment>
         ))}
       </div>
 
-      <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm min-h-[400px] flex flex-col">
+      <div className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-sm min-h-[400px] flex flex-col">
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center justify-between">
@@ -342,10 +342,18 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                       : "border-slate-100 hover:border-slate-300 bg-slate-50/50"
                   )}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <p className="font-bold text-slate-900"><span>{service.name}</span></p>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-900 truncate text-sm sm:text-base">{service.name}</p>
+                      <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{service.duration} min</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-black text-blue-900 text-sm sm:text-base">{formatCurrency(service.defaultPrice)}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500 line-clamp-2">{service.description}</p>
+                  {service.description && (
+                    <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1 mt-2">{service.description}</p>
+                  )}
                 </button>
               ))}
             </div>
@@ -439,7 +447,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   {discount > 0 && (
                     <div className="flex justify-between text-sm text-red-500">
                       <span>Desconto Aplicado</span>
-                      <span>-<span>{formatCurrency(discount)}</span></span>
+                      <span>-{formatCurrency(discount)}</span>
                     </div>
                   )}
                   {coupon.toUpperCase() === 'NORB10' && (
@@ -450,7 +458,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   )}
                   <div className="pt-4 border-t border-slate-200 flex justify-between items-end">
                     <span className="font-bold text-slate-900">Total Final</span>
-                    <span className="text-2xl font-black text-blue-900"><span>{formatCurrency(finalPrice)}</span></span>
+                    <span className="text-2xl font-black text-blue-900">{formatCurrency(finalPrice)}</span>
                   </div>
                 </div>
               </div>

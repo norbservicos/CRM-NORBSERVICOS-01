@@ -202,13 +202,13 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Lista de Serviços</h2>
-          <p className="text-slate-500">Acompanhe todos os agendamentos e status.</p>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900">Lista de Serviços</h2>
+          <p className="text-xs md:text-sm text-slate-500">Acompanhe todos os agendamentos e status.</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="relative flex-1 min-w-[240px]">
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
@@ -219,9 +219,9 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={18} className="text-slate-400" />
+          <Filter size={18} className="text-slate-400 shrink-0" />
           <select 
-            className="rounded-xl border-slate-200 text-sm focus:ring-blue-900 focus:border-blue-900"
+            className="flex-1 sm:flex-none rounded-xl border-slate-200 text-xs focus:ring-blue-900 focus:border-blue-900"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >

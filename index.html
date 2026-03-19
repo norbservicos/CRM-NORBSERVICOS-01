@@ -13,16 +13,6 @@
   <body>
     <div id="root"></div>
     <script>
-      // Unregister service workers to fix white screen issues
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-          }
-        });
-      }
-    </script>
-    <script>
       // Security deterrents
       document.addEventListener('contextmenu', (e) => e.preventDefault());
       document.addEventListener('keydown', (e) => {

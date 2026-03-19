@@ -64,7 +64,8 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop View: Weekly Grid */}
+        <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[800px]">
             <div className="grid grid-cols-8 border-b border-slate-100 bg-slate-50/50">
               <div className="p-4 border-r border-slate-100"></div>
@@ -124,6 +125,71 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Mobile View: Single Day List */}
+        <div className="md:hidden">
+          <div className="flex overflow-x-auto p-4 gap-2 bg-slate-50 border-b border-slate-100 no-scrollbar">
+            {weekDays.map(day => (
+              <button
+                key={day.toString()}
+                onClick={() => setCurrentDate(day)}
+                className={cn(
+                  "flex-shrink-0 w-12 h-16 rounded-2xl flex flex-col items-center justify-center transition-all",
+                  isSameDay(day, currentDate) 
+                    ? "bg-blue-900 text-white shadow-lg shadow-blue-900/20" 
+                    : "bg-white text-slate-600 border border-slate-200"
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                  {format(day, 'EEE', { locale: ptBR }).slice(0, 3)}
+                </span>
+                <span className="text-lg font-black">{format(day, 'dd')}</span>
+              </button>
+            ))}
+          </div>
+          
+          <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+            {hours.map(hour => {
+              const dayBookings = getBookingsForDayAndHour(currentDate, hour);
+              return (
+                <div key={hour} className="flex gap-4">
+                  <div className="w-12 text-right pt-1">
+                    <span className="text-[10px] font-bold text-slate-400">{hour}</span>
+                  </div>
+                  <div className="flex-1 space-y-2 min-h-[40px] border-l border-slate-100 pl-4 relative">
+                    <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-slate-200" />
+                    {dayBookings.map(booking => {
+                      const client = store.clients.find(c => c.id === booking.clientId);
+                      const service = store.serviceTypes.find(s => s.id === booking.serviceTypeId);
+                      return (
+                        <div 
+                          key={booking.id}
+                          className={cn(
+                            "p-3 rounded-2xl text-xs shadow-sm border transition-all",
+                            booking.status === 'concluído' 
+                              ? "bg-blue-50 border-blue-100 text-black" 
+                              : "bg-blue-50 border-blue-100 text-blue-700"
+                          )}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <p className="font-bold"><span>{client?.name}</span></p>
+                            <p className="font-black"><span>{booking.time}</span></p>
+                          </div>
+                          <p className="opacity-70"><span>{service?.name}</span></p>
+                        </div>
+                      );
+                    })}
+                    {dayBookings.length === 0 && (
+                      <div className="h-full flex items-center">
+                        <span className="text-[10px] text-slate-300 italic">Disponível</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

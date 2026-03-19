@@ -71,66 +71,66 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
   }, [store.bookings, store.serviceTypes, store.expenses]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Financeiro</h2>
-        <p className="text-slate-500">Controle seu faturamento e desempenho financeiro.</p>
+        <h2 className="text-xl md:text-2xl font-bold text-slate-900">Financeiro</h2>
+        <p className="text-xs md:text-sm text-slate-500">Controle seu faturamento e desempenho financeiro.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <FinanceCard 
-          title="Faturamento Total" 
+          title="Faturamento" 
           value={formatCurrency(stats.totalRevenue)} 
           icon={DollarSign} 
-          trend="+12.5%" 
+          trend="+12%" 
           positive={true}
         />
         <FinanceCard 
-          title="Gastos Totais" 
+          title="Gastos" 
           value={formatCurrency(stats.totalExpenses)} 
           icon={ArrowDownRight} 
-          trend="-5.2%" 
+          trend="-5%" 
           positive={false}
         />
         <FinanceCard 
-          title="Lucro Líquido" 
+          title="Lucro" 
           value={formatCurrency(stats.netProfit)} 
           icon={TrendingUp} 
-          trend="+15.8%" 
+          trend="+15%" 
           positive={stats.netProfit >= 0}
         />
         <FinanceCard 
           title="Ticket Médio" 
           value={formatCurrency(stats.averageTicket)} 
           icon={Target} 
-          trend="+3.2%" 
+          trend="+3%" 
           positive={true}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         {/* Monthly Revenue Chart */}
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold mb-6">Desempenho Mensal (R$)</h3>
-          <div className="h-[300px] w-full">
+        <div className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6">Desempenho Mensal (R$)</h3>
+          <div className="h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                   formatter={(value: number, name: string) => [formatCurrency(value), name === 'revenue' ? 'Faturamento' : name === 'expenses' ? 'Gastos' : 'Lucro']}
                 />
-                <Legend />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: '10px' }} />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
                   name="Faturamento"
                   stroke="#1e3a8a" 
-                  strokeWidth={4} 
-                  dot={{ r: 6, fill: '#1e3a8a', strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 8 }}
+                  strokeWidth={3} 
+                  dot={{ r: 4, fill: '#1e3a8a', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6 }}
                 />
                 <Line 
                   type="monotone" 
@@ -139,7 +139,7 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
                   stroke="#ef4444" 
                   strokeWidth={2} 
                   strokeDasharray="5 5"
-                  dot={{ r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
+                  dot={{ r: 3, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
                 />
                 <Line 
                   type="monotone" 
@@ -147,7 +147,7 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
                   name="Lucro"
                   stroke="#10b981" 
                   strokeWidth={2} 
-                  dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                  dot={{ r: 3, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -155,9 +155,9 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
         </div>
 
         {/* Revenue by Service Chart */}
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold mb-6">Faturamento por Serviço</h3>
-          <div className="h-[300px] w-full">
+        <div className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6">Faturamento por Serviço</h3>
+          <div className="h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.revenueByService} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
@@ -167,14 +167,14 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
                   type="category" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{fontSize: 10, fill: '#64748b'}} 
-                  width={120}
+                  tick={{fontSize: 9, fill: '#64748b'}} 
+                  width={80}
                 />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                   formatter={(value: number) => [formatCurrency(value), 'Faturamento']}
                 />
-                <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={20}>
+                <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={15}>
                   {stats.revenueByService.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1e3a8a' : '#000000'} />
                   ))}
@@ -190,21 +190,21 @@ export default function Finance({ store }: { store: ReturnType<typeof useStore> 
 
 function FinanceCard({ title, value, icon: Icon, trend, positive }: any) {
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
-          <Icon size={20} />
+    <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex justify-between items-start mb-2 sm:mb-4">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
+          <Icon size={16} className="sm:size-5" />
         </div>
         <div className={cn(
-          "flex items-center text-xs font-bold px-2 py-1 rounded-lg",
+          "flex items-center text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg",
           positive ? "bg-blue-50 text-blue-900" : "bg-red-50 text-red-600"
         )}>
-          {positive ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
+          {positive ? <ArrowUpRight size={10} className="sm:size-3 mr-0.5 sm:mr-1" /> : <ArrowDownRight size={10} className="sm:size-3 mr-0.5 sm:mr-1" />}
           {trend}
         </div>
       </div>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-black text-slate-900">{value}</p>
+      <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">{title}</p>
+      <p className="text-lg sm:text-2xl font-black text-slate-900 truncate">{value}</p>
     </div>
   );
 }

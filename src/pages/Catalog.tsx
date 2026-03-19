@@ -122,12 +122,12 @@ export default function Catalog({ store }: { store: ReturnType<typeof useStore> 
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Catálogo de Serviços</h2>
-          <p className="text-slate-500">Defina os serviços e preços padrão da sua empresa.</p>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900">Catálogo de Serviços</h2>
+          <p className="text-xs md:text-sm text-slate-500">Defina os serviços e preços padrão da sua empresa.</p>
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-blue-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center transition-all shadow-lg shadow-blue-900/20"
+          className="bg-blue-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center transition-all shadow-lg shadow-blue-900/20 w-full sm:w-auto"
         >
           <Plus size={20} className="mr-2" />
           Novo Serviço

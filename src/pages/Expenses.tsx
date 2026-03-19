@@ -155,7 +155,7 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
@@ -207,27 +207,65 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
                   </td>
                 </tr>
               ))}
-              {filteredExpenses.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <div className="bg-slate-100 p-6 rounded-full grayscale opacity-20">
-                        <Logo collapsed className="w-16 h-16" />
-                      </div>
-                      <p className="text-slate-400 italic font-medium">Nenhum gasto registrado.</p>
-                      <button 
-                        onClick={() => handleOpenModal()}
-                        className="text-blue-900 font-bold hover:underline"
-                      >
-                        Registrar primeiro gasto
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredExpenses.map(expense => (
+            <div key={expense.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-slate-900"><span>{expense.description}</span></p>
+                  <div className="flex items-center mt-1">
+                    <Tag size={12} className="mr-1 text-blue-900" />
+                    <span className="text-[10px] capitalize text-slate-500 font-bold uppercase tracking-wider">{expense.category}</span>
+                  </div>
+                </div>
+                <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
+              </div>
+              
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex items-center text-slate-500 text-xs">
+                  <Calendar size={14} className="mr-1 text-slate-400" />
+                  {new Date(expense.date).toLocaleDateString('pt-BR')}
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleOpenModal(expense)}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-slate-100"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setDeleteConfirm(expense.id)}
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all border border-slate-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredExpenses.length === 0 && (
+          <div className="px-6 py-20 text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="bg-slate-100 p-6 rounded-full grayscale opacity-20">
+                <Logo collapsed className="w-16 h-16" />
+              </div>
+              <p className="text-slate-400 italic font-medium">Nenhum gasto registrado.</p>
+              <button 
+                onClick={() => handleOpenModal()}
+                className="text-blue-900 font-bold hover:underline"
+              >
+                Registrar primeiro gasto
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}

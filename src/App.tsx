@@ -204,16 +204,23 @@ function MainApp() {
     );
   }
 
-  const menuItems = [
+  const menuItems: { id: string; label: string; icon: any; onClick?: () => void }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'agenda', label: 'Agenda', icon: Calendar },
+    { id: 'services', label: 'Serviços', icon: ClipboardList },
+    { id: 'finance', label: 'Financeiro', icon: DollarSign },
     { id: 'clients', label: 'Clientes', icon: Users },
     { id: 'catalog', label: 'Catálogo', icon: Settings },
-    { id: 'booking', label: 'Novo Agendamento', icon: PlusCircle, onClick: handleNewBooking },
-    { id: 'services', label: 'Serviços', icon: ClipboardList },
-    { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'finance', label: 'Financeiro', icon: DollarSign },
     { id: 'expenses', label: 'Gastos', icon: DollarSign },
     { id: 'reports', label: 'Relatórios', icon: FileText },
+  ];
+
+  const mobileNavItems: { id: string; label: string; icon: any; onClick?: () => void }[] = [
+    { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
+    { id: 'agenda', label: 'Agenda', icon: Calendar },
+    { id: 'booking', label: 'Novo', icon: PlusCircle, onClick: handleNewBooking },
+    { id: 'services', label: 'Serviços', icon: ClipboardList },
+    { id: 'finance', label: 'Finanças', icon: DollarSign },
   ];
 
   const renderContent = () => {
@@ -367,9 +374,41 @@ function MainApp() {
           </div>
         </header>
 
-        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+        <div className={cn("p-4 sm:p-8 max-w-7xl mx-auto", isMobile && "pb-24")}>
           {renderContent()}
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        {isMobile && (
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+            {mobileNavItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.onClick) item.onClick();
+                  else setActiveTab(item.id as Tab);
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all min-w-[64px]",
+                  activeTab === item.id 
+                    ? "text-blue-900" 
+                    : "text-slate-400"
+                )}
+              >
+                <div className={cn(
+                  "p-1 rounded-lg mb-0.5 transition-all",
+                  activeTab === item.id && item.id !== 'booking' ? "bg-blue-50" : "",
+                  item.id === 'booking' ? "bg-blue-900 text-white p-2 -mt-8 shadow-lg shadow-blue-900/40 rounded-full" : ""
+                )}>
+                  <item.icon size={item.id === 'booking' ? 24 : 20} />
+                </div>
+                <span className={cn("text-[10px] font-bold uppercase tracking-wider", activeTab === item.id ? "text-blue-900" : "text-slate-400")}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </nav>
+        )}
       </main>
     </div>
   );
