@@ -76,17 +76,25 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     let clientId = selectedClientId;
 
     if (showNewClientForm) {
+      if (!newClient.name.trim() || !newClient.phone.trim() || !newClient.address.trim() || !newClient.city.trim()) {
+        setNotification({ message: 'Por favor, preencha todos os dados do novo cliente (Nome, WhatsApp, Endereço e Cidade).', type: 'error' });
+        return;
+      }
+
       try {
         const createdClient = await store.addClient(newClient);
         if (createdClient) {
           clientId = createdClient.id;
+        } else {
+          throw new Error('Erro ao obter ID do novo cliente');
         }
       } catch (err: any) {
         if (err.message === 'CLIENT_EXISTS') {
           setNotification({ message: 'Este cliente já está cadastrado (mesmo nome e telefone). Por favor, use a busca para selecioná-lo.', type: 'error' });
           return;
         }
-        setNotification({ message: 'Ocorreu um erro ao cadastrar o cliente.', type: 'error' });
+        console.error('Erro ao cadastrar cliente:', err);
+        setNotification({ message: 'Ocorreu um erro ao cadastrar o cliente. Verifique a conexão e tente novamente.', type: 'error' });
         return;
       }
     }
@@ -110,7 +118,11 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
       return;
     }
 
-    await proceedWithBooking(clientId);
+    try {
+      await proceedWithBooking(clientId);
+    } catch (err: any) {
+      setNotification({ message: 'Ocorreu um erro ao finalizar o agendamento. Verifique os dados e tente novamente.', type: 'error' });
+    }
   };
 
   const proceedWithBooking = async (clientId: string) => {
@@ -120,18 +132,23 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
       date,
       time,
       originalPrice: manualPrice !== null ? manualPrice : (selectedService?.defaultPrice || 0),
-      discount,
+      discount: Number(discount) || 0,
       coupon,
-      finalPrice,
+      finalPrice: Number(finalPrice) || 0,
       status: editingBooking?.status || 'agendado',
       paymentMethod,
       observations: observations || ''
     };
 
-    if (editingBooking) {
-      await store.updateBooking(editingBooking.id, bookingData);
-    } else {
-      await store.addBooking(bookingData);
+    try {
+      if (editingBooking) {
+        await store.updateBooking(editingBooking.id, bookingData);
+      } else {
+        await store.addBooking(bookingData);
+      }
+    } catch (err: any) {
+      // Re-throw to be caught by handleCreateBooking
+      throw err;
     }
 
     // Generate WhatsApp message
@@ -373,7 +390,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Detalhes do Serviço *</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Detalhes do Serviço</label>
                   <textarea 
                     rows={3}
                     placeholder="Descreva os detalhes do serviço..."
@@ -464,7 +481,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
             </button>
           ) : (
             <button
-              disabled={!date || !time || !observations}
+              disabled={!date || !time}
               onClick={handleCreateBooking}
               className="bg-blue-900 hover:bg-black text-white px-8 py-3 rounded-2xl font-bold flex items-center transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
