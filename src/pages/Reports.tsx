@@ -42,8 +42,9 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     });
 
     const completed = periodBookings.filter(b => b.status === 'concluído');
+    const scheduled = periodBookings.filter(b => b.status === 'agendado');
     
-    // Most sold services
+    // Most sold services (only completed)
     const serviceCounts = store.serviceTypes.map(type => {
       const count = completed.filter(b => b.serviceTypeId === type.id).length;
       const revenue = completed
@@ -52,9 +53,12 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
       return { ...type, count, revenue };
     }).sort((a, b) => b.count - a.count);
 
-    const totalRevenue = completed.reduce((acc, b) => acc + b.finalPrice, 0);
+    const receivedValue = completed.reduce((acc, b) => acc + b.finalPrice, 0);
+    const toReceiveValue = scheduled.reduce((acc, b) => acc + b.finalPrice, 0);
+    const totalRevenue = receivedValue + toReceiveValue;
+    
     const totalClients = store.clients.length;
-    const avgValue = completed.length > 0 ? totalRevenue / completed.length : 0;
+    const avgValue = completed.length > 0 ? receivedValue / completed.length : 0;
 
     // Expenses for the period
     const totalExpenses = store.expenses.filter(e => {
@@ -70,7 +74,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
       }
     }).reduce((acc, e) => acc + e.amount, 0);
 
-    const profit = totalRevenue - totalExpenses;
+    const profit = receivedValue - totalExpenses;
 
     // Gender breakdown for the month
     let menCount = 0;
@@ -84,9 +88,12 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     return { 
       serviceCounts, 
       totalRevenue, 
+      receivedValue,
+      toReceiveValue,
       totalClients, 
       avgValue, 
       completedCount: completed.length,
+      scheduledCount: scheduled.length,
       totalMonthBookings: periodBookings.length,
       totalExpenses,
       profit,
@@ -130,10 +137,13 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     const summaryData = [
       ['Total de Clientes', stats.totalClients.toString()],
       ['Agendamentos no Período', stats.totalMonthBookings.toString()],
-      ['Serviços Realizados', stats.completedCount.toString()],
-      ['Faturamento Total', formatCurrency(stats.totalRevenue)],
+      ['Serviços Realizados (Concluídos)', stats.completedCount.toString()],
+      ['Serviços Pendentes (Agendados)', stats.scheduledCount.toString()],
+      ['Faturamento Total (Previsto)', formatCurrency(stats.totalRevenue)],
+      ['Valor Recebido', formatCurrency(stats.receivedValue)],
+      ['Valor a Receber', formatCurrency(stats.toReceiveValue)],
       ['Total de Gastos', formatCurrency(stats.totalExpenses)],
-      ['Lucro Líquido', formatCurrency(stats.profit)],
+      ['Lucro Real (Recebido - Gastos)', formatCurrency(stats.profit)],
       ['Ticket Médio', formatCurrency(stats.avgValue)],
       ['Clientes Homens', stats.menCount.toString()],
       ['Clientes Mulheres', stats.womenCount.toString()],
@@ -182,10 +192,13 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
       ['Indicador', 'Valor'],
       ['Total de Clientes', stats.totalClients],
       ['Agendamentos no Período', stats.totalMonthBookings],
-      ['Serviços Realizados', stats.completedCount],
-      ['Faturamento Total', stats.totalRevenue],
+      ['Serviços Realizados (Concluídos)', stats.completedCount],
+      ['Serviços Pendentes (Agendados)', stats.scheduledCount],
+      ['Faturamento Total (Previsto)', stats.totalRevenue],
+      ['Valor Recebido', stats.receivedValue],
+      ['Valor a Receber', stats.toReceiveValue],
       ['Total de Gastos', stats.totalExpenses],
-      ['Lucro Líquido', stats.profit],
+      ['Lucro Real (Recebido - Gastos)', stats.profit],
       ['Ticket Médio', stats.avgValue],
       ['Clientes Homens', stats.menCount],
       ['Clientes Mulheres', stats.womenCount],

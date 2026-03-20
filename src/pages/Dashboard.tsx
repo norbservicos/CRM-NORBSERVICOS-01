@@ -72,9 +72,18 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
     const scheduled = filteredBookings.filter(b => b.status === 'agendado').length;
     const lost = filteredBookings.filter(b => b.status === 'perdido').length;
     const completed = filteredBookings.filter(b => b.status === 'concluído').length;
+    
     const completedBookings = filteredBookings.filter(b => b.status === 'concluído');
-    const totalRevenue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
-    const scheduledValue = filteredBookings.filter(b => b.status === 'agendado').reduce((acc, b) => acc + b.finalPrice, 0);
+    const scheduledBookings = filteredBookings.filter(b => b.status === 'agendado');
+    
+    // Valor Recebido: Apenas concluídos
+    const receivedValue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+    
+    // Valor a Receber: Apenas agendados
+    const toReceiveValue = scheduledBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+    
+    // Faturamento: Concluídos + Agendados
+    const totalRevenue = receivedValue + toReceiveValue;
 
     // Calculate expenses for the month
     const totalExpenses = store.expenses.filter(e => {
@@ -90,7 +99,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       }
     }).reduce((acc, e) => acc + e.amount, 0);
 
-    const profit = totalRevenue - totalExpenses;
+    const profit = receivedValue - totalExpenses;
 
     // Gender breakdown for COMPLETED bookings in the filtered period
     let menCount = 0;
@@ -129,7 +138,8 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       lost, 
       completed, 
       totalRevenue, 
-      scheduledValue,
+      receivedValue,
+      toReceiveValue,
       totalExpenses, 
       profit, 
       menCount, 
@@ -182,8 +192,9 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       ['Serviços Concluídos', stats.completed.toString()],
       ['Serviços Perdidos', stats.lost.toString()],
       ['Serviços Agendados', stats.scheduled.toString()],
-      ['Valor Agendado', formatCurrency(stats.scheduledValue)],
-      ['Faturamento Total', formatCurrency(stats.totalRevenue)],
+      ['Faturamento Total (Previsto)', formatCurrency(stats.totalRevenue)],
+      ['Valor Recebido', formatCurrency(stats.receivedValue)],
+      ['Valor a Receber', formatCurrency(stats.toReceiveValue)],
       ['Total de Gastos', formatCurrency(stats.totalExpenses)],
       ['Lucro Líquido', formatCurrency(stats.profit)],
       ['Clientes Homens (Agendados)', stats.menCount.toString()],
@@ -341,7 +352,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-6">
         <StatCard 
           title="Serviços Mês" 
           value={stats.totalMonth} 
@@ -350,24 +361,17 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           showValue={showValues}
         />
         <StatCard 
-          title="Agendados" 
-          value={stats.scheduled} 
-          icon={Calendar} 
-          color="bg-yellow-500" 
-          showValue={showValues}
-        />
-        <StatCard 
-          title="Valor Agendado" 
-          value={formatCurrency(stats.scheduledValue)} 
-          icon={Clock} 
-          color="bg-yellow-500" 
-          showValue={showValues}
-        />
-        <StatCard 
           title="Concluídos" 
           value={stats.completed} 
           icon={CheckCircle2} 
-          color="bg-blue-900" 
+          color="bg-emerald-500" 
+          showValue={showValues}
+        />
+        <StatCard 
+          title="Agendados" 
+          value={stats.scheduled} 
+          icon={Calendar} 
+          color="bg-blue-500" 
           showValue={showValues}
         />
         <StatCard 
@@ -380,15 +384,32 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         <StatCard 
           title="Faturamento" 
           value={formatCurrency(stats.totalRevenue)} 
-          icon={DollarSign} 
+          icon={TrendingUp} 
           color="bg-slate-900" 
           showValue={showValues}
+          subtitle="Concluído + Agendado"
+        />
+        <StatCard 
+          title="Valor Recebido" 
+          value={formatCurrency(stats.receivedValue)} 
+          icon={DollarSign} 
+          color="bg-emerald-600" 
+          showValue={showValues}
+          subtitle="Apenas concluídos"
+        />
+        <StatCard 
+          title="Valor a Receber" 
+          value={formatCurrency(stats.toReceiveValue)} 
+          icon={Clock} 
+          color="bg-amber-500" 
+          showValue={showValues}
+          subtitle="Apenas agendados"
         />
         <StatCard 
           title="Gastos" 
           value={formatCurrency(stats.totalExpenses)} 
           icon={ArrowDownRight} 
-          color="bg-red-500" 
+          color="bg-red-600" 
           showValue={showValues}
         />
         <StatCard 
@@ -397,6 +418,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           icon={TrendingUp} 
           color="bg-green-600" 
           showValue={showValues}
+          subtitle="Recebido - Gastos"
         />
       </div>
 
@@ -559,7 +581,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, showValue = true }: any) {
+function StatCard({ title, value, icon: Icon, color, showValue = true, subtitle }: any) {
   return (
     <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
       <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-4 text-white shadow-lg", color)}>
@@ -569,6 +591,9 @@ function StatCard({ title, value, icon: Icon, color, showValue = true }: any) {
       <p className="text-lg md:text-2xl font-black text-slate-900 truncate">
         {showValue ? value : "••••••"}
       </p>
+      {subtitle && (
+        <p className="text-[8px] md:text-[10px] text-slate-400 mt-1 font-medium">{subtitle}</p>
+      )}
     </div>
   );
 }
