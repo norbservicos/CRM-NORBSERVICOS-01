@@ -12,7 +12,16 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+export function parseDate(dateStr: string) {
+  if (!dateStr) return new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function formatDate(date: string | Date) {
+  if (typeof date === 'string' && date.includes('-')) {
+    return new Intl.DateTimeFormat('pt-BR').format(parseDate(date));
+  }
   return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
 }
 

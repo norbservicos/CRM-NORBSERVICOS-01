@@ -25,7 +25,7 @@ import {
   YAxis,
   CartesianGrid
 } from 'recharts';
-import { formatCurrency, cn } from '../utils/utils';
+import { formatCurrency, cn, parseDate } from '../utils/utils';
 import { Logo } from '../components/Logo';
 import { useStore } from '../hooks/useStore';
 import type { Booking } from '../types';
@@ -48,7 +48,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
     const currentYear = now.getFullYear();
 
     const filteredBookings = store.bookings.filter(b => {
-      const bDate = new Date(b.date);
+      const bDate = parseDate(b.date);
       const matchesMonth = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
       const matchesDate = filterDate ? b.date === filterDate : true;
       const matchesType = filterType ? b.serviceTypeId === filterType : true;
@@ -65,7 +65,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
 
     // Calculate expenses for the month
     const totalExpenses = store.expenses.filter(e => {
-      const eDate = new Date(e.date);
+      const eDate = parseDate(e.date);
       const matchesMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
       const matchesDate = filterDate ? e.date === filterDate : true;
       return matchesMonth && matchesDate;

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import type { Client, ServiceType, Booking } from '../types';
-import { cn, formatCurrency } from '../utils/utils';
+import { cn, formatCurrency, parseDate } from '../utils/utils';
 
 interface BookingFormProps {
   store: ReturnType<typeof useStore>;
@@ -156,7 +156,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
     const service = store.serviceTypes.find(s => s.id === selectedServiceId);
     
     if (client && service) {
-      const message = `Olá ${client.name}, seu serviço de ${service.name} foi ${editingBooking ? 'atualizado' : 'agendado'} para o dia ${new Date(date).toLocaleDateString('pt-BR')} às ${time}. Qualquer dúvida estamos à disposição. NORB Gestão Pro.`;
+      const message = `Olá ${client.name}, seu serviço de ${service.name} foi ${editingBooking ? 'atualizado' : 'agendado'} para o dia ${parseDate(date).toLocaleDateString('pt-BR')} às ${time}. Qualquer dúvida estamos à disposição. NORB Gestão Pro.`;
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/55${client.phone.replace(/\D/g, '')}?text=${encodedMessage}`;
       

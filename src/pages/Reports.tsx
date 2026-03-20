@@ -14,7 +14,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
-import { formatCurrency, cn } from '../utils/utils';
+import { formatCurrency, cn, parseDate } from '../utils/utils';
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
@@ -28,7 +28,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
     const currentYear = selectedDate.getFullYear();
 
     const periodBookings = store.bookings.filter(b => {
-      const bDate = new Date(b.date);
+      const bDate = parseDate(b.date);
       return bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
     });
 
@@ -49,7 +49,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
 
     // Expenses for the month
     const totalExpenses = store.expenses.filter(e => {
-      const eDate = new Date(e.date);
+      const eDate = parseDate(e.date);
       return eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
     }).reduce((acc, e) => acc + e.amount, 0);
 
@@ -285,7 +285,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                   return (
                     <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4">
-                        <p className="text-sm font-bold text-slate-900">{format(new Date(booking.date), 'dd/MM/yyyy')}</p>
+                        <p className="text-sm font-bold text-slate-900">{format(parseDate(booking.date), 'dd/MM/yyyy')}</p>
                         <p className="text-xs text-slate-400">{booking.time}</p>
                       </td>
                       <td className="p-4">
@@ -358,7 +358,7 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-900">{client?.name}</p>
-                        <p className="text-[10px] text-slate-400">{format(new Date(booking.date), 'dd/MM/yyyy')} • {booking.time}</p>
+                        <p className="text-[10px] text-slate-400">{format(parseDate(booking.date), 'dd/MM/yyyy')} • {booking.time}</p>
                       </div>
                     </div>
                     <span className={cn(
