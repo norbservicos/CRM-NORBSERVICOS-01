@@ -9,12 +9,16 @@ import {
   CheckCircle2,
   Calendar,
   Tag,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { Logo } from '../components/Logo';
 import { Expense, ExpenseCategory } from '../types';
-import { cn, formatCurrency } from '../utils/utils';
+import { cn, formatCurrency, parseDate } from '../utils/utils';
+import { format, startOfMonth, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Expenses({ store }: { store: ReturnType<typeof useStore> }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +27,11 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   
+  const [filterMode, setFilterMode] = useState<'month' | 'custom'>('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
   const [formData, setFormData] = useState({
     description: '',
     amount: 0,
@@ -30,10 +39,34 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
     date: new Date().toISOString().split('T')[0]
   });
 
-  const filteredExpenses = store.expenses.filter(e => 
-    e.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    e.category.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const filteredExpenses = store.expenses.filter(e => {
+    const eDate = parseDate(e.date);
+    
+    let matchesPeriod = false;
+    if (filterMode === 'month') {
+      const currentMonth = selectedDate.getMonth();
+      const currentYear = selectedDate.getFullYear();
+      matchesPeriod = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+    } else {
+      const start = parseDate(startDate);
+      const end = parseDate(endDate);
+      matchesPeriod = eDate >= start && eDate <= end;
+    }
+
+    const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         e.category.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesPeriod && matchesSearch;
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const isCurrentMonth = isSameMonth(selectedDate, new Date());
+
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + offset);
+    if (offset > 0 && newDate > new Date()) return;
+    setSelectedDate(newDate);
+  };
 
   const handleOpenModal = (expense?: Expense) => {
     if (expense) {
@@ -142,7 +175,87 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center bg-slate-50/50">
+        <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center bg-slate-50/50">
+          <div className="flex bg-slate-100 p-1 rounded-2xl self-start">
+            <button
+              onClick={() => setFilterMode('month')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                filterMode === 'month' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Mensal
+            </button>
+            <button
+              onClick={() => setFilterMode('custom')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                filterMode === 'custom' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Personalizado
+            </button>
+          </div>
+
+          {filterMode === 'month' ? (
+            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-1 shadow-sm min-w-[200px]">
+              <button 
+                onClick={() => changeMonth(-1)}
+                className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div className="px-4 text-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mês</p>
+                <p className="text-sm font-black text-slate-900 capitalize">
+                  {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+                </p>
+              </div>
+              <button 
+                onClick={() => changeMonth(1)}
+                disabled={isCurrentMonth}
+                className={cn(
+                  "p-2 rounded-xl transition-colors text-slate-600",
+                  isCurrentMonth ? "opacity-20 cursor-not-allowed" : "hover:bg-slate-50"
+                )}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-2 shadow-sm">
+              <div className="flex flex-col px-1">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">Início</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="text-xs font-bold text-slate-900 bg-transparent border-none focus:ring-0 p-0 w-28"
+                />
+              </div>
+              <span className="text-slate-300">|</span>
+              <div className="flex flex-col px-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-[8px] font-bold text-slate-400 uppercase">Fim</span>
+                  <button 
+                    onClick={() => setEndDate(format(new Date(), 'yyyy-MM-dd'))}
+                    className="text-[8px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                  >
+                    Hoje
+                  </button>
+                </div>
+                <input
+                  type="date"
+                  value={endDate}
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="text-xs font-bold text-slate-900 bg-transparent border-none focus:ring-0 p-0 w-28"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -153,6 +266,18 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button 
+            onClick={() => { 
+              setFilterMode('month');
+              setSelectedDate(new Date());
+              setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+              setEndDate(format(new Date(), 'yyyy-MM-dd'));
+              setSearchTerm(''); 
+            }}
+            className="text-sm text-blue-900 font-medium hover:underline whitespace-nowrap"
+          >
+            Limpar filtros
+          </button>
         </div>
 
         <div className="hidden md:block overflow-x-auto">

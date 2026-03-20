@@ -11,15 +11,23 @@ import {
   Trash2,
   MessageSquare,
   Filter,
-  MoreVertical
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import type { Booking, ServiceStatus } from '../types';
-import { cn, formatCurrency, formatDate } from '../utils/utils';
+import { cn, formatCurrency, formatDate, parseDate } from '../utils/utils';
+import { format, startOfMonth, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function ServiceList({ store, onEdit }: { store: ReturnType<typeof useStore>, onEdit: (booking: Booking) => void }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ServiceStatus | 'all'>('all');
+  const [filterMode, setFilterMode] = useState<'month' | 'custom'>('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [completionConfirm, setCompletionConfirm] = useState<string | null>(null);
   const [lostReasonModal, setLostReasonModal] = useState<{ id: string } | null>(null);
@@ -27,6 +35,19 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
   const [showSuccess, setShowSuccess] = useState(false);
 
   const filteredBookings = store.bookings.filter(b => {
+    const bDate = parseDate(b.date);
+    
+    let matchesPeriod = false;
+    if (filterMode === 'month') {
+      const currentMonth = selectedDate.getMonth();
+      const currentYear = selectedDate.getFullYear();
+      matchesPeriod = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
+    } else {
+      const start = parseDate(startDate);
+      const end = parseDate(endDate);
+      matchesPeriod = bDate >= start && bDate <= end;
+    }
+
     const client = store.clients.find(c => c.id === b.clientId);
     const service = store.serviceTypes.find(s => s.id === b.serviceTypeId);
     
@@ -36,8 +57,17 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
     
     const matchesStatus = statusFilter === 'all' ? true : b.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesPeriod && matchesSearch && matchesStatus;
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const isCurrentMonth = isSameMonth(selectedDate, new Date());
+
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + offset);
+    if (offset > 0 && newDate > new Date()) return;
+    setSelectedDate(newDate);
+  };
 
   const getStatusColor = (status: ServiceStatus) => {
     switch (status) {
@@ -205,7 +235,90 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
           <h2 className="text-xl md:text-2xl font-bold text-slate-900">Lista de Serviços</h2>
           <p className="text-xs md:text-sm text-slate-500">Acompanhe todos os agendamentos e status.</p>
         </div>
+
+        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+          <button
+            onClick={() => setFilterMode('month')}
+            className={cn(
+              "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all",
+              filterMode === 'month' ? "bg-white text-blue-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Mensal
+          </button>
+          <button
+            onClick={() => setFilterMode('custom')}
+            className={cn(
+              "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all",
+              filterMode === 'custom' ? "bg-white text-blue-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Personalizado
+          </button>
+        </div>
       </div>
+
+      {filterMode === 'month' ? (
+        <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <button 
+            onClick={() => changeMonth(-1)}
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-black text-blue-900 uppercase tracking-widest">
+              {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+            </span>
+            {isCurrentMonth && (
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">Mês Atual</span>
+            )}
+          </div>
+
+          <button 
+            onClick={() => changeMonth(1)}
+            disabled={isCurrentMonth}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              isCurrentMonth ? "text-slate-300 cursor-not-allowed" : "hover:bg-slate-100 text-slate-600"
+            )}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Data Inicial</label>
+            <input 
+              type="date" 
+              className="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-900 focus:border-blue-900"
+              value={startDate}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Data Final</label>
+              <button 
+                onClick={() => setEndDate(new Date().toISOString().split('T')[0])}
+                className="text-[10px] font-bold text-blue-900 hover:underline uppercase"
+              >
+                Hoje
+              </button>
+            </div>
+            <input 
+              type="date" 
+              className="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-900 focus:border-blue-900"
+              value={endDate}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative flex-1">
@@ -218,18 +331,33 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Filter size={18} className="text-slate-400 shrink-0" />
-          <select 
-            className="flex-1 sm:flex-none rounded-xl border-slate-200 text-xs focus:ring-blue-900 focus:border-blue-900"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <Filter size={18} className="text-slate-400 shrink-0" />
+            <select 
+              className="flex-1 sm:flex-none rounded-xl border-slate-200 text-xs focus:ring-blue-900 focus:border-blue-900"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <option value="all">Todos os Status</option>
+              <option value="agendado">Agendados</option>
+              <option value="concluído">Concluídos</option>
+              <option value="perdido">Perdidos</option>
+            </select>
+          </div>
+          <button 
+            onClick={() => {
+              setFilterMode('month');
+              setSelectedDate(new Date());
+              setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+              setEndDate(format(new Date(), 'yyyy-MM-dd'));
+              setStatusFilter('all');
+              setSearchTerm('');
+            }}
+            className="text-sm text-blue-900 font-medium hover:underline whitespace-nowrap"
           >
-            <option value="all">Todos os Status</option>
-            <option value="agendado">Agendados</option>
-            <option value="concluído">Concluídos</option>
-            <option value="perdido">Perdidos</option>
-          </select>
+            Limpar filtros
+          </button>
         </div>
       </div>
 

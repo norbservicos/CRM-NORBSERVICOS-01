@@ -10,7 +10,9 @@ import {
   ArrowDownRight,
   ClipboardList,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -26,6 +28,8 @@ import {
   CartesianGrid
 } from 'recharts';
 import { formatCurrency, cn, parseDate } from '../utils/utils';
+import { format, startOfMonth, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Logo } from '../components/Logo';
 import { useStore } from '../hooks/useStore';
 import type { Booking } from '../types';
@@ -38,21 +42,30 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ store, setActiveTab }: DashboardProps) {
-  const [filterDate, setFilterDate] = useState('');
+  const [filterMode, setFilterMode] = useState<'month' | 'custom'>('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filterType, setFilterType] = useState('');
   const [showValues, setShowValues] = useState(true);
 
   const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const filteredBookings = store.bookings.filter(b => {
       const bDate = parseDate(b.date);
-      const matchesMonth = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
-      const matchesDate = filterDate ? b.date === filterDate : true;
+      
+      let matchesPeriod = false;
+      if (filterMode === 'month') {
+        const currentMonth = selectedDate.getMonth();
+        const currentYear = selectedDate.getFullYear();
+        matchesPeriod = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
+      } else {
+        const start = parseDate(startDate);
+        const end = parseDate(endDate);
+        matchesPeriod = bDate >= start && bDate <= end;
+      }
+
       const matchesType = filterType ? b.serviceTypeId === filterType : true;
-      return matchesMonth && matchesDate && matchesType;
+      return matchesPeriod && matchesType;
     });
 
     const totalMonth = filteredBookings.length;
@@ -66,9 +79,15 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
     // Calculate expenses for the month
     const totalExpenses = store.expenses.filter(e => {
       const eDate = parseDate(e.date);
-      const matchesMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
-      const matchesDate = filterDate ? e.date === filterDate : true;
-      return matchesMonth && matchesDate;
+      if (filterMode === 'month') {
+        const currentMonth = selectedDate.getMonth();
+        const currentYear = selectedDate.getFullYear();
+        return eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+      } else {
+        const start = parseDate(startDate);
+        const end = parseDate(endDate);
+        return eDate >= start && eDate <= end;
+      }
     }).reduce((acc, e) => acc + e.amount, 0);
 
     const profit = totalRevenue - totalExpenses;
@@ -119,7 +138,16 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       paymentMethods,
       typeDistribution 
     };
-  }, [store.bookings, store.expenses, filterDate, filterType, store.serviceTypes, store.clients]);
+  }, [store.bookings, store.expenses, filterMode, selectedDate, startDate, endDate, filterType, store.serviceTypes, store.clients]);
+
+  const isCurrentMonth = isSameMonth(selectedDate, new Date());
+
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + offset);
+    if (offset > 0 && newDate > new Date()) return;
+    setSelectedDate(newDate);
+  };
 
   const statusChartData = [
     { name: 'Concluídos', value: stats.completed, color: '#22c55e' },
@@ -204,16 +232,87 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap gap-4 items-end shadow-sm">
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Filtrar por Data</label>
-          <input 
-            type="date" 
-            className="block w-full rounded-xl border-slate-200 text-sm focus:ring-blue-900 focus:border-blue-900"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col lg:flex-row gap-4 items-stretch lg:items-end shadow-sm">
+        <div className="flex bg-slate-100 p-1 rounded-2xl self-start">
+          <button
+            onClick={() => setFilterMode('month')}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+              filterMode === 'month' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Mensal
+          </button>
+          <button
+            onClick={() => setFilterMode('custom')}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+              filterMode === 'custom' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Personalizado
+          </button>
         </div>
+
+        {filterMode === 'month' ? (
+          <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-1 shadow-sm min-w-[200px]">
+            <button 
+              onClick={() => changeMonth(-1)}
+              className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="px-4 text-center">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mês</p>
+              <p className="text-sm font-black text-slate-900 capitalize">
+                {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+              </p>
+            </div>
+            <button 
+              onClick={() => changeMonth(1)}
+              disabled={isCurrentMonth}
+              className={cn(
+                "p-2 rounded-xl transition-colors text-slate-600",
+                isCurrentMonth ? "opacity-20 cursor-not-allowed" : "hover:bg-slate-50"
+              )}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-2 shadow-sm">
+            <div className="flex flex-col px-1">
+              <span className="text-[8px] font-bold text-slate-400 uppercase">Início</span>
+              <input
+                type="date"
+                value={startDate}
+                max={format(new Date(), 'yyyy-MM-dd')}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="text-xs font-bold text-slate-900 bg-transparent border-none focus:ring-0 p-0 w-28"
+              />
+            </div>
+            <span className="text-slate-300">|</span>
+            <div className="flex flex-col px-1">
+              <div className="flex justify-between items-center">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">Fim</span>
+                <button 
+                  onClick={() => setEndDate(format(new Date(), 'yyyy-MM-dd'))}
+                  className="text-[8px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                >
+                  Hoje
+                </button>
+              </div>
+              <input
+                type="date"
+                value={endDate}
+                max={format(new Date(), 'yyyy-MM-dd')}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="text-xs font-bold text-slate-900 bg-transparent border-none focus:ring-0 p-0 w-28"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Serviço</label>
           <select 
@@ -228,7 +327,13 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           </select>
         </div>
         <button 
-          onClick={() => { setFilterDate(''); setFilterType(''); }}
+          onClick={() => { 
+            setFilterMode('month');
+            setSelectedDate(new Date());
+            setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+            setEndDate(format(new Date(), 'yyyy-MM-dd'));
+            setFilterType(''); 
+          }}
           className="text-sm text-blue-900 font-medium hover:underline pb-2"
         >
           Limpar filtros
