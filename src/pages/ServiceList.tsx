@@ -41,9 +41,9 @@ export default function ServiceList({ store, onEdit }: { store: ReturnType<typeo
 
   const getStatusColor = (status: ServiceStatus) => {
     switch (status) {
-      case 'agendado': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'pendente': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'concluído': return 'bg-blue-100 text-black border-blue-200';
+      case 'agendado': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'pendente': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'concluído': return 'bg-green-100 text-green-700 border-green-200';
       case 'cancelado': return 'bg-red-100 text-red-700 border-red-200';
       case 'perdido': return 'bg-slate-200 text-slate-700 border-slate-300';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';

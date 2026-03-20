@@ -122,9 +122,9 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   }, [store.bookings, store.expenses, filterDate, filterType, store.serviceTypes, store.clients]);
 
   const statusChartData = [
-    { name: 'Concluídos', value: stats.completed, color: '#1e3a8a' },
+    { name: 'Concluídos', value: stats.completed, color: '#22c55e' },
     { name: 'Perdidos', value: stats.lost, color: '#ef4444' },
-    { name: 'Agendados', value: stats.scheduled, color: '#3b82f6' },
+    { name: 'Agendados', value: stats.scheduled, color: '#eab308' },
   ].filter(d => d.value > 0);
 
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6'];
@@ -248,14 +248,14 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           title="Agendados" 
           value={stats.scheduled} 
           icon={Calendar} 
-          color="bg-blue-500" 
+          color="bg-yellow-500" 
           showValue={showValues}
         />
         <StatCard 
           title="Valor Agendado" 
           value={formatCurrency(stats.scheduledValue)} 
           icon={Clock} 
-          color="bg-amber-500" 
+          color="bg-yellow-500" 
           showValue={showValues}
         />
         <StatCard 
@@ -290,7 +290,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           title="Lucro" 
           value={formatCurrency(stats.profit)} 
           icon={TrendingUp} 
-          color="bg-emerald-600" 
+          color="bg-green-600" 
           showValue={showValues}
         />
       </div>

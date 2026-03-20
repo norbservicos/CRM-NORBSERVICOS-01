@@ -232,8 +232,8 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             title="Lucro" 
             value={formatCurrency(stats.profit)} 
             icon={TrendingUp} 
-            color="text-emerald-600" 
-            bgColor="bg-emerald-50" 
+            color="text-green-600" 
+            bgColor="bg-green-50" 
           />
           <ReportStat 
             title="Gastos" 
@@ -246,8 +246,8 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
             title="Média" 
             value={formatCurrency(stats.avgValue)} 
             icon={Star} 
-            color="text-amber-600" 
-            bgColor="bg-amber-50" 
+            color="text-yellow-600" 
+            bgColor="bg-yellow-50" 
           />
         </div>
       </div>
@@ -308,8 +308,8 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                       <td className="p-4">
                         <span className={cn(
                           "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          booking.status === 'concluído' ? "bg-emerald-50 text-emerald-700" :
-                          booking.status === 'agendado' ? "bg-blue-50 text-blue-700" :
+                          booking.status === 'concluído' ? "bg-green-100 text-green-700" :
+                          booking.status === 'agendado' ? "bg-yellow-100 text-yellow-700" :
                           "bg-red-50 text-red-700"
                         )}>
                           {booking.status}
@@ -363,8 +363,8 @@ export default function Reports({ store }: { store: ReturnType<typeof useStore> 
                     </div>
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider",
-                      booking.status === 'concluído' ? "bg-emerald-50 text-emerald-700" :
-                      booking.status === 'agendado' ? "bg-blue-50 text-blue-700" :
+                      booking.status === 'concluído' ? "bg-green-100 text-green-700" :
+                      booking.status === 'agendado' ? "bg-yellow-100 text-yellow-700" :
                       "bg-red-50 text-red-700"
                     )}>
                       {booking.status}
