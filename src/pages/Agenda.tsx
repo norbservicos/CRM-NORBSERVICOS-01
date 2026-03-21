@@ -8,7 +8,8 @@ import {
   X,
   Phone,
   MapPin,
-  FileText
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import { 
   format, 
@@ -260,6 +261,12 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                         <MapPin size={16} className="mr-3 text-slate-400 shrink-0" />
                         <span>{client?.address}, {client?.city}</span>
                       </div>
+                      {viewBooking.paymentMethod && (
+                        <div className="flex items-center text-sm text-slate-600">
+                          <CreditCard size={16} className="mr-3 text-slate-400 shrink-0" />
+                          <span className="capitalize">{viewBooking.paymentMethod}</span>
+                        </div>
+                      )}
                       {viewBooking.observations && (
                         <div className="flex items-start text-sm text-slate-600">
                           <FileText size={16} className="mr-3 text-slate-400 shrink-0 mt-1" />
