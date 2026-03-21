@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -27,9 +27,18 @@ import type { Booking } from '../types';
 export default function Agenda({ store }: { store: ReturnType<typeof useStore> }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
-  const weekDays = [...Array(7)].map((_, i) => addDays(startDate, i));
+  const daysCount = isMobile ? 4 : 7;
+  const weekDays = [...Array(daysCount)].map((_, i) => addDays(startDate, i));
 
   const hours = [...Array(14)].map((_, i) => `${i + 8}:00`);
 
@@ -138,13 +147,13 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
 
         {/* Mobile View: Single Day List */}
         <div className="md:hidden">
-          <div className="flex overflow-x-auto p-4 gap-2 bg-slate-50 border-b border-slate-100 no-scrollbar">
+          <div className="flex p-4 gap-2 bg-slate-50 border-b border-slate-100">
             {weekDays.map(day => (
               <button
                 key={day.toString()}
                 onClick={() => setCurrentDate(day)}
                 className={cn(
-                  "flex-shrink-0 w-12 h-16 rounded-2xl flex flex-col items-center justify-center transition-all",
+                  "flex-1 h-16 rounded-2xl flex flex-col items-center justify-center transition-all",
                   isSameDay(day, currentDate) 
                     ? "bg-blue-900 text-white shadow-lg shadow-blue-900/20" 
                     : "bg-white text-slate-600 border border-slate-200"
