@@ -36,7 +36,7 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
-  const startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const startDate = isMobile ? currentDate : startOfWeek(currentDate, { weekStartsOn: 0 });
   const daysCount = isMobile ? 4 : 7;
   const weekDays = [...Array(daysCount)].map((_, i) => addDays(startDate, i));
 
@@ -48,9 +48,23 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
     
     return store.bookings.filter(b => 
       b.date === dayStr && 
-      b.time.startsWith(hourPrefix) &&
-      b.status !== 'cancelado'
+      b.time.startsWith(hourPrefix)
     );
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'concluído':
+        return "bg-green-50 border-green-200 text-green-900";
+      case 'agendado':
+        return "bg-yellow-50 border-yellow-200 text-yellow-900";
+      case 'cancelado':
+        return "bg-red-50 border-red-200 text-red-900";
+      case 'perdido':
+        return "bg-slate-100 border-slate-200 text-slate-600";
+      default:
+        return "bg-blue-50 border-blue-100 text-blue-700";
+    }
   };
 
   return (
@@ -62,16 +76,16 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
         </div>
         <div className="flex items-center bg-white rounded-2xl border border-slate-200 p-1 shadow-sm">
           <button 
-            onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
+            onClick={() => setCurrentDate(isMobile ? addDays(currentDate, -4) : subWeeks(currentDate, 1))}
             className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="px-4 font-bold text-sm text-slate-700 min-w-[200px] text-center">
-            <span>{format(weekDays[0], "dd 'de' MMM", { locale: ptBR })}</span> - <span>{format(weekDays[6], "dd 'de' MMM", { locale: ptBR })}</span>
+            <span>{format(weekDays[0], "dd 'de' MMM", { locale: ptBR })}</span> - <span>{format(weekDays[weekDays.length - 1], "dd 'de' MMM", { locale: ptBR })}</span>
           </div>
           <button 
-            onClick={() => setCurrentDate(addWeeks(currentDate, 1))}
+            onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 4) : addWeeks(currentDate, 1))}
             className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-600"
           >
             <ChevronRight size={20} />
@@ -125,9 +139,7 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                               onClick={() => setViewBooking(booking)}
                               className={cn(
                                 "p-2 rounded-xl text-[10px] shadow-sm mb-1 border transition-all cursor-pointer hover:scale-[1.02]",
-                                booking.status === 'concluído' 
-                                  ? "bg-blue-50 border-blue-100 text-black" 
-                                  : "bg-blue-50 border-blue-100 text-blue-700"
+                                getStatusColor(booking.status)
                               )}
                             >
                               <p className="font-bold truncate"><span>{client?.name}</span></p>
@@ -186,9 +198,7 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                           onClick={() => setViewBooking(booking)}
                           className={cn(
                             "p-3 rounded-2xl text-xs shadow-sm border transition-all cursor-pointer hover:scale-[1.01]",
-                            booking.status === 'concluído' 
-                              ? "bg-blue-50 border-blue-100 text-black" 
-                              : "bg-blue-50 border-blue-100 text-blue-700"
+                            getStatusColor(booking.status)
                           )}
                         >
                           <div className="flex justify-between items-start mb-1">
