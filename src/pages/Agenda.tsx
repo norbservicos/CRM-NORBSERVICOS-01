@@ -4,7 +4,11 @@ import {
   ChevronRight, 
   Calendar as CalendarIcon,
   Clock,
-  User
+  User,
+  X,
+  Phone,
+  MapPin,
+  FileText
 } from 'lucide-react';
 import { 
   format, 
@@ -16,10 +20,12 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useStore } from '../hooks/useStore';
-import { cn } from '../utils/utils';
+import { cn, formatCurrency, formatDate } from '../utils/utils';
+import type { Booking } from '../types';
 
 export default function Agenda({ store }: { store: ReturnType<typeof useStore> }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   
   const startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = [...Array(7)].map((_, i) => addDays(startDate, i));
@@ -106,6 +112,7 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                           return (
                             <div 
                               key={booking.id}
+                              onClick={() => setViewBooking(booking)}
                               className={cn(
                                 "p-2 rounded-xl text-[10px] shadow-sm mb-1 border transition-all cursor-pointer hover:scale-[1.02]",
                                 booking.status === 'concluído' 
@@ -166,8 +173,9 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
                       return (
                         <div 
                           key={booking.id}
+                          onClick={() => setViewBooking(booking)}
                           className={cn(
-                            "p-3 rounded-2xl text-xs shadow-sm border transition-all",
+                            "p-3 rounded-2xl text-xs shadow-sm border transition-all cursor-pointer hover:scale-[1.01]",
                             booking.status === 'concluído' 
                               ? "bg-blue-50 border-blue-100 text-black" 
                               : "bg-blue-50 border-blue-100 text-blue-700"
@@ -193,6 +201,103 @@ export default function Agenda({ store }: { store: ReturnType<typeof useStore> }
           </div>
         </div>
       </div>
+
+      {viewBooking && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-200 relative">
+            <button 
+              onClick={() => setViewBooking(null)}
+              className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-blue-100 text-blue-900 rounded-2xl flex items-center justify-center shrink-0">
+                <CalendarIcon size={24} />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-slate-900">Detalhes do Agendamento</h4>
+                <p className="text-sm text-slate-500">Informações completas do serviço.</p>
+              </div>
+            </div>
+
+            {(() => {
+              const client = store.clients.find(c => c.id === viewBooking.clientId);
+              const service = store.serviceTypes.find(s => s.id === viewBooking.serviceTypeId);
+              
+              return (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                        viewBooking.status === 'agendado' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                        viewBooking.status === 'concluído' ? 'bg-green-100 text-green-700 border-green-200' :
+                        viewBooking.status === 'cancelado' ? 'bg-red-100 text-red-700 border-red-200' :
+                        viewBooking.status === 'perdido' ? 'bg-slate-200 text-slate-700 border-slate-300' :
+                        'bg-slate-100 text-slate-700 border-slate-200'
+                      )}>
+                        <span>{viewBooking.status}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data e Hora</p>
+                        <p className="text-sm font-bold text-slate-900"><span>{formatDate(viewBooking.date)}</span> • <span>{viewBooking.time}</span></p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900"><span>{client?.name || 'Cliente Removido'}</span></h3>
+                      <p className="text-sm font-medium text-blue-900"><span>{service?.name}</span></p>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center text-sm text-slate-600">
+                        <Phone size={16} className="mr-3 text-slate-400 shrink-0" />
+                        <span>{client?.phone}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-slate-600">
+                        <MapPin size={16} className="mr-3 text-slate-400 shrink-0" />
+                        <span>{client?.address}, {client?.city}</span>
+                      </div>
+                      {viewBooking.observations && (
+                        <div className="flex items-start text-sm text-slate-600">
+                          <FileText size={16} className="mr-3 text-slate-400 shrink-0 mt-1" />
+                          <p className="italic">"{viewBooking.observations}"</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-2xl space-y-2">
+                      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <span>Valor Original</span>
+                        <span>{formatCurrency(viewBooking.originalPrice)}</span>
+                      </div>
+                      {viewBooking.discount > 0 && (
+                        <div className="flex justify-between text-xs font-bold text-red-400 uppercase tracking-wider">
+                          <span>Desconto</span>
+                          <span>-<span>{formatCurrency(viewBooking.discount)}</span></span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-slate-200">
+                        <span>Total</span>
+                        <span><span>{formatCurrency(viewBooking.finalPrice)}</span></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setViewBooking(null)}
+                    className="w-full px-6 py-3 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
