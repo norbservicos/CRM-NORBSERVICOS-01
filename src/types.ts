@@ -10,6 +10,7 @@ export interface Client {
   city: string;
   gender: Gender;
   observations?: string;
+  lastNotificationDismissedAt?: string;
   createdAt: string;
   uid: string;
 }

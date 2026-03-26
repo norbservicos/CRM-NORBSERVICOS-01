@@ -12,6 +12,7 @@
         "city": { "type": "string" },
         "gender": { "type": "string", "enum": ["masculino", "feminino"] },
         "observations": { "type": "string" },
+        "lastNotificationDismissedAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
         "uid": { "type": "string", "description": "Owner of the record" }
       },
