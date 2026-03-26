@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { 
   collection, 
   onSnapshot, 
@@ -173,7 +174,7 @@ export function useStore() {
       throw new Error('CLIENT_EXISTS');
     }
 
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     const newClient = { 
       ...client, 
       id, 
@@ -216,7 +217,7 @@ export function useStore() {
       throw new Error('SERVICE_EXISTS');
     }
 
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     try {
       await setDoc(doc(db, 'serviceTypes', id), { ...service, id, uid: user.uid });
     } catch (error) {
@@ -242,7 +243,7 @@ export function useStore() {
 
   const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt' | 'uid'>) => {
     if (!user) return;
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     const newBooking = { 
       ...booking, 
       id, 
@@ -275,7 +276,7 @@ export function useStore() {
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'createdAt' | 'uid'>) => {
     if (!user) return;
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     const newExpense = { 
       ...expense, 
       id, 

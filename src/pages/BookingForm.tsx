@@ -36,7 +36,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
   const [observations, setObservations] = useState(editingBooking?.observations || '');
   const [paymentMethod, setPaymentMethod] = useState<any>(editingBooking?.paymentMethod || 'pix');
   const [showNewClientForm, setShowNewClientForm] = useState(false);
-  const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '', gender: 'masculino' as const });
+  const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '', gender: 'masculino' as const, observations: '' });
 
   useEffect(() => {
     if (editingBooking) {
@@ -290,6 +290,16 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   <option value="masculino">Masculino</option>
                   <option value="feminino">Feminino</option>
                 </select>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Observações</label>
+                  <textarea 
+                    rows={2}
+                    placeholder="Alguma observação sobre o cliente?"
+                    className="w-full rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
+                    value={newClient.observations}
+                    onChange={(e) => setNewClient({...newClient, observations: e.target.value})}
+                  />
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

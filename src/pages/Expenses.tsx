@@ -297,7 +297,7 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
                   <td className="px-6 py-4">
                     <div className="flex items-center text-slate-600 text-sm">
                       <Calendar size={14} className="mr-2 text-slate-400" />
-                      {new Date(expense.date).toLocaleDateString('pt-BR')}
+                      {parseDate(expense.date).toLocaleDateString('pt-BR')}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -354,7 +354,7 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
               <div className="flex justify-between items-center pt-2">
                 <div className="flex items-center text-slate-500 text-xs">
                   <Calendar size={14} className="mr-1 text-slate-400" />
-                  {new Date(expense.date).toLocaleDateString('pt-BR')}
+                  {parseDate(expense.date).toLocaleDateString('pt-BR')}
                 </div>
                 <div className="flex gap-2">
                   <button 
