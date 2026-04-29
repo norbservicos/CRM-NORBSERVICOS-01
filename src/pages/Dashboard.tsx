@@ -54,35 +54,44 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const inactiveClients = useMemo(() => {
-    const fourMonthsAgo = subMonths(new Date(), 4);
-    
-    return store.clients.filter(client => {
-      const clientBookings = store.bookings
-        .filter(b => b.clientId === client.id && b.status === 'concluído')
-        .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+    try {
+      const fourMonthsAgo = subMonths(new Date(), 4);
+      const concluídoBookings = store.bookings.filter(b => b.status === 'concluído');
       
-      const lastBooking = clientBookings[0];
-      if (!lastBooking) return false;
-      
-      const lastBookingDate = parseDate(lastBooking.date);
-      const isInactive = isBefore(lastBookingDate, fourMonthsAgo);
-      
-      if (!isInactive) return false;
-      
-      if (client.lastNotificationDismissedAt) {
-        const dismissedAt = new Date(client.lastNotificationDismissedAt);
-        if (!isBefore(dismissedAt, fourMonthsAgo)) {
-          return false;
+      return store.clients.reduce((acc: any[], client) => {
+        const clientBookings = concluídoBookings
+          .filter(b => b.clientId === client.id)
+          .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+        
+        const lastBooking = clientBookings[0];
+        if (!lastBooking) return acc;
+        
+        const lastBookingDate = parseDate(lastBooking.date);
+        const isInactive = isBefore(lastBookingDate, fourMonthsAgo);
+        
+        if (!isInactive) return acc;
+        
+        if (client.lastNotificationDismissedAt) {
+          try {
+            const dismissedAt = new Date(client.lastNotificationDismissedAt);
+            if (!isBefore(dismissedAt, fourMonthsAgo)) {
+              return acc;
+            }
+          } catch (e) {
+            console.error('Invalid dismissal date:', client.lastNotificationDismissedAt);
+          }
         }
-      }
-      
-      return true;
-    }).map(client => {
-      const lastBooking = store.bookings
-        .filter(b => b.clientId === client.id && b.status === 'concluído')
-        .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())[0];
-      return { ...client, lastBookingDate: lastBooking.date };
-    });
+        
+        acc.push({ 
+          ...client, 
+          lastBookingDate: lastBooking.date 
+        });
+        return acc;
+      }, []);
+    } catch (err) {
+      console.error('Error calculating inactive clients:', err);
+      return [];
+    }
   }, [store.clients, store.bookings]);
 
   const markAsDone = async (clientId: string) => {
@@ -102,104 +111,115 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
   };
 
   const stats = useMemo(() => {
-    const filteredBookings = store.bookings.filter(b => {
-      const bDate = parseDate(b.date);
+    try {
+      const filteredBookings = store.bookings.filter(b => {
+        const bDate = parseDate(b.date);
+        
+        let matchesPeriod = false;
+        if (filterMode === 'month') {
+          const currentMonth = selectedDate.getMonth();
+          const currentYear = selectedDate.getFullYear();
+          matchesPeriod = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
+        } else {
+          const start = parseDate(startDate);
+          const end = parseDate(endDate);
+          matchesPeriod = bDate >= start && bDate <= end;
+        }
+
+        const matchesType = filterType ? b.serviceTypeId === filterType : true;
+        return matchesPeriod && matchesType;
+      });
+
+      const totalMonth = filteredBookings.length;
+      const scheduled = filteredBookings.filter(b => b.status === 'agendado').length;
+      const lost = filteredBookings.filter(b => b.status === 'perdido').length;
+      const completed = filteredBookings.filter(b => b.status === 'concluído').length;
       
-      let matchesPeriod = false;
-      if (filterMode === 'month') {
-        const currentMonth = selectedDate.getMonth();
-        const currentYear = selectedDate.getFullYear();
-        matchesPeriod = bDate.getMonth() === currentMonth && bDate.getFullYear() === currentYear;
-      } else {
-        const start = parseDate(startDate);
-        const end = parseDate(endDate);
-        matchesPeriod = bDate >= start && bDate <= end;
-      }
+      const completedBookings = filteredBookings.filter(b => b.status === 'concluído');
+      const scheduledBookings = filteredBookings.filter(b => b.status === 'agendado');
+      
+      // Valor Recebido: Apenas concluídos
+      const receivedValue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+      
+      // Valor a Receber: Apenas agendados
+      const toReceiveValue = scheduledBookings.reduce((acc, b) => acc + b.finalPrice, 0);
+      
+      // Faturamento: Concluídos + Agendados
+      const totalRevenue = receivedValue + toReceiveValue;
 
-      const matchesType = filterType ? b.serviceTypeId === filterType : true;
-      return matchesPeriod && matchesType;
-    });
+      // Calculate expenses for the month
+      const totalExpenses = store.expenses.filter(e => {
+        const eDate = parseDate(e.date);
+        if (filterMode === 'month') {
+          const currentMonth = selectedDate.getMonth();
+          const currentYear = selectedDate.getFullYear();
+          return eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+        } else {
+          const start = parseDate(startDate);
+          const end = parseDate(endDate);
+          return eDate >= start && eDate <= end;
+        }
+      }).reduce((acc, e) => acc + e.amount, 0);
 
-    const totalMonth = filteredBookings.length;
-    const scheduled = filteredBookings.filter(b => b.status === 'agendado').length;
-    const lost = filteredBookings.filter(b => b.status === 'perdido').length;
-    const completed = filteredBookings.filter(b => b.status === 'concluído').length;
-    
-    const completedBookings = filteredBookings.filter(b => b.status === 'concluído');
-    const scheduledBookings = filteredBookings.filter(b => b.status === 'agendado');
-    
-    // Valor Recebido: Apenas concluídos
-    const receivedValue = completedBookings.reduce((acc, b) => acc + b.finalPrice, 0);
-    
-    // Valor a Receber: Apenas agendados
-    const toReceiveValue = scheduledBookings.reduce((acc, b) => acc + b.finalPrice, 0);
-    
-    // Faturamento: Concluídos + Agendados
-    const totalRevenue = receivedValue + toReceiveValue;
+      const profit = receivedValue - totalExpenses;
 
-    // Calculate expenses for the month
-    const totalExpenses = store.expenses.filter(e => {
-      const eDate = parseDate(e.date);
-      if (filterMode === 'month') {
-        const currentMonth = selectedDate.getMonth();
-        const currentYear = selectedDate.getFullYear();
-        return eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
-      } else {
-        const start = parseDate(startDate);
-        const end = parseDate(endDate);
-        return eDate >= start && eDate <= end;
-      }
-    }).reduce((acc, e) => acc + e.amount, 0);
+      // Gender breakdown for COMPLETED bookings in the filtered period
+      let menCount = 0;
+      let womenCount = 0;
+      let otherGenderCount = 0;
+      completedBookings.forEach(b => {
+        const client = store.clients.find(c => c.id === b.clientId);
+        if (client?.gender === 'masculino') menCount++;
+        else if (client?.gender === 'feminino') womenCount++;
+        else otherGenderCount++;
+      });
 
-    const profit = receivedValue - totalExpenses;
+      // Payment method breakdown for COMPLETED bookings
+      const paymentMethods = {
+        pix: completedBookings.filter(b => b.paymentMethod === 'pix').length,
+        dinheiro: completedBookings.filter(b => b.paymentMethod === 'dinheiro').length,
+        cartão: completedBookings.filter(b => b.paymentMethod === 'cartão').length,
+      };
 
-    // Gender breakdown for COMPLETED bookings in the filtered period
-    let menCount = 0;
-    let womenCount = 0;
-    let otherGenderCount = 0;
-    completedBookings.forEach(b => {
-      const client = store.clients.find(c => c.id === b.clientId);
-      if (client?.gender === 'masculino') menCount++;
-      else if (client?.gender === 'feminino') womenCount++;
-      else otherGenderCount++;
-    });
+      // Calculate service type distribution for COMPLETED bookings
+      const typeDistributionMap: Record<string, number> = {};
+      completedBookings.forEach(b => {
+        const service = store.serviceTypes.find(s => s.id === b.serviceTypeId);
+        const name = service?.name || 'Outros';
+        typeDistributionMap[name] = (typeDistributionMap[name] || 0) + 1;
+      });
 
-    // Payment method breakdown for COMPLETED bookings
-    const paymentMethods = {
-      pix: completedBookings.filter(b => b.paymentMethod === 'pix').length,
-      dinheiro: completedBookings.filter(b => b.paymentMethod === 'dinheiro').length,
-      cartão: completedBookings.filter(b => b.paymentMethod === 'cartão').length,
-    };
+      const typeDistribution = Object.entries(typeDistributionMap).map(([name, value]) => ({
+        name,
+        value
+      })).sort((a, b) => b.value - a.value);
 
-    // Calculate service type distribution for COMPLETED bookings
-    const typeDistributionMap: Record<string, number> = {};
-    completedBookings.forEach(b => {
-      const service = store.serviceTypes.find(s => s.id === b.serviceTypeId);
-      const name = service?.name || 'Outros';
-      typeDistributionMap[name] = (typeDistributionMap[name] || 0) + 1;
-    });
-
-    const typeDistribution = Object.entries(typeDistributionMap).map(([name, value]) => ({
-      name,
-      value
-    })).sort((a, b) => b.value - a.value);
-
-    return { 
-      totalMonth, 
-      scheduled, 
-      lost, 
-      completed, 
-      totalRevenue, 
-      receivedValue,
-      toReceiveValue,
-      totalExpenses, 
-      profit, 
-      menCount, 
-      womenCount, 
-      otherGenderCount,
-      paymentMethods,
-      typeDistribution 
-    };
+      return { 
+        totalMonth, 
+        scheduled, 
+        lost, 
+        completed, 
+        totalRevenue, 
+        receivedValue,
+        toReceiveValue,
+        totalExpenses, 
+        profit, 
+        menCount, 
+        womenCount, 
+        otherGenderCount,
+        paymentMethods,
+        typeDistribution 
+      };
+    } catch (err) {
+      console.error('Error calculating stats:', err);
+      return {
+        totalMonth: 0, scheduled: 0, lost: 0, completed: 0,
+        totalRevenue: 0, receivedValue: 0, toReceiveValue: 0,
+        totalExpenses: 0, profit: 0, menCount: 0, womenCount: 0,
+        otherGenderCount: 0, paymentMethods: { pix: 0, dinheiro: 0, cartão: 0 },
+        typeDistribution: []
+      };
+    }
   }, [store.bookings, store.expenses, filterMode, selectedDate, startDate, endDate, filterType, store.serviceTypes, store.clients]);
 
   const isCurrentMonth = isSameMonth(selectedDate, new Date());
@@ -270,7 +290,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
             <Logo collapsed className="w-10 h-10 md:w-12 md:h-12" />
             <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" title="Conexão Segura" />
           </div>
-          <div className="min-w-0 flex items-center gap-4">
+          <div className="min-w-0 flex flex-1 items-center justify-between md:justify-start gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">Olá, NORB!</h2>
               <p className="text-xs md:text-sm text-slate-500 truncate">Aqui está o que está acontecendo hoje.</p>
@@ -278,51 +298,69 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                className={cn(
+                  "relative p-2.5 rounded-xl border transition-all shadow-sm flex items-center justify-center group",
+                  inactiveClients.length > 0 
+                    ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" 
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                )}
+                title="Notificações de Clientes Inativos"
               >
-                <Bell size={20} />
+                <Bell size={20} className={cn(inactiveClients.length > 0 && "animate-tada")} />
                 {inactiveClients.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
-                    {inactiveClients.length}
-                  </span>
+                  <>
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                      {inactiveClients.length}
+                    </span>
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full animate-ping opacity-25" />
+                  </>
                 )}
               </button>
 
               {showNotifications && (
-                <div className="absolute left-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
-                  <div className="p-4 border-bottom border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-900">Clientes Inativos (+4 meses)</h3>
-                    <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
+                <div className="absolute left-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-slate-900">Clientes Inativos</h3>
+                      <p className="text-[10px] text-slate-500 font-medium">Mais de 4 meses sem serviços concluídos</p>
+                    </div>
+                    <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 p-1">
                       <XCircle size={18} />
                     </button>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
+                  <div className="max-h-[min(400px,70vh)] overflow-y-auto custom-scrollbar">
                     {inactiveClients.length === 0 ? (
-                      <div className="p-8 text-center text-slate-500">
-                        <CheckCircle2 size={32} className="mx-auto mb-2 text-emerald-500 opacity-20" />
-                        <p className="text-sm">Nenhum cliente inativo no momento!</p>
+                      <div className="p-10 text-center text-slate-500">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle2 size={32} className="text-emerald-500 opacity-50" />
+                        </div>
+                        <p className="text-sm font-medium">Nenhum cliente inativo no momento!</p>
+                        <p className="text-xs text-slate-400 mt-1">Sua base de clientes está bem engajada.</p>
                       </div>
                     ) : (
                       <div className="divide-y divide-slate-100">
                         {inactiveClients.map(client => (
-                          <div key={client.id} className="p-4 hover:bg-slate-50 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h4 className="font-bold text-slate-900 text-sm">{client.name}</h4>
-                                <p className="text-xs text-slate-500">Último serviço: {formatDate(client.lastBookingDate)}</p>
+                          <div key={client.id} className="p-4 hover:bg-slate-50 transition-colors group/item">
+                            <div className="flex justify-between items-start">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-slate-900 text-sm truncate">{client.name}</h4>
+                                <div className="flex items-center text-slate-500 text-[10px] mt-1">
+                                  <Calendar size={12} className="mr-1 opacity-50" />
+                                  <span>Último serviço: {formatDate(client.lastBookingDate)}</span>
+                                </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex gap-2 ml-4">
                                 <button 
                                   onClick={() => openWhatsApp(client.phone, client.name)}
-                                  className="p-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+                                  className="p-2 bg-emerald-100 text-emerald-700 rounded-xl hover:bg-emerald-200 transition-colors shadow-sm"
                                   title="Chamar no WhatsApp"
                                 >
                                   <MessageSquare size={16} />
                                 </button>
                                 <button 
                                   onClick={() => markAsDone(client.id)}
-                                  className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                                  title="Tarefa Realizada"
+                                  className="p-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition-colors shadow-sm"
+                                  title="Marcar como atendido"
                                 >
                                   <Check size={16} />
                                 </button>
@@ -663,7 +701,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
           <div className="space-y-4 flex-1">
             {store.bookings
               .filter(b => b.status === 'agendado')
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+              .sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime())
               .slice(0, 5)
               .map(booking => {
                 const client = store.clients.find(c => c.id === booking.clientId);

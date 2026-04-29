@@ -4,37 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>NORB Gestão Pro</title>
-    <meta name="theme-color" content="#10b981" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2907/2907150.png" />
   </head>
   <body>
     <div id="root"></div>
     <script>
-      // Security deterrents
-      document.addEventListener('contextmenu', (e) => e.preventDefault());
-      document.addEventListener('keydown', (e) => {
-        if (
-          e.key === 'F12' ||
-          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-          (e.ctrlKey && e.key === 'U')
-        ) {
-          e.preventDefault();
-        }
-      });
-
-      // Disable drag and drop for images
-      document.addEventListener('dragstart', (e) => {
-        if (e.target.nodeName === 'IMG') e.preventDefault();
-      });
-
-      // Console warning
-      const warningStyle = 'font-family: sans-serif; font-size: 20px; font-weight: bold; color: red;';
-      const infoStyle = 'font-family: sans-serif; font-size: 14px;';
-      console.log('%cPARE!', warningStyle);
-      console.log('%cEste é um recurso de navegador destinado a desenvolvedores. Se alguém disse para você copiar e colar algo aqui para "hackear" ou adicionar recursos, é um golpe e dará a eles acesso à sua conta.', infoStyle);
+      // Unregister Service Workers to clear stale cache causing white screens
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          if (registrations.length > 0) {
+            Promise.all(registrations.map(r => r.unregister())).then(() => {
+              window.location.reload();
+            });
+          }
+        });
+      }
     </script>
     <script type="module" src="src/main.tsx"></script>
   </body>

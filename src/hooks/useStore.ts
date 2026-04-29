@@ -44,15 +44,16 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const currentUser = auth.currentUser;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
+      userId: currentUser?.uid,
+      email: currentUser?.email,
+      emailVerified: currentUser?.emailVerified,
+      isAnonymous: currentUser?.isAnonymous,
+      tenantId: currentUser?.tenantId,
+      providerInfo: currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         displayName: provider.displayName,
         email: provider.email,
@@ -81,11 +82,14 @@ export function useStore() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        console.log('User detected:', user.email);
         if (user.email?.toLowerCase() !== 'guilhermed952@gmail.com') {
+          console.warn('Unauthorized user blocked:', user.email);
           // Wrong user!
           signOut(auth);
           setUser(null);
@@ -117,40 +121,55 @@ export function useStore() {
     if (!isAuthReady || !user || isUnauthorized) return;
 
     setLoading(true);
+    setError(null);
+
+    const handleError = (err: any, type: OperationType, path: string) => {
+      console.error(`Store error (${type}) on ${path}:`, err);
+      setError(`Erro ao carregar dados (${path}). Verifique sua conexão.`);
+      setLoading(false);
+      handleFirestoreError(err, type, path);
+    };
 
     const qClients = query(collection(db, 'clients'), where('uid', '==', user.uid));
     const unsubClients = onSnapshot(qClients, (snapshot) => {
       setClients(snapshot.docs.map(doc => doc.data() as Client));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'clients'));
+    }, (error) => handleError(error, OperationType.LIST, 'clients'));
 
     const qServiceTypes = query(collection(db, 'serviceTypes'), where('uid', '==', user.uid));
     const unsubServiceTypes = onSnapshot(qServiceTypes, async (snapshot) => {
-      const services = snapshot.docs.map(doc => doc.data() as ServiceType);
-      
-      if (snapshot.empty) {
-        // Seed initial service types if none exist for this user
-        for (const st of INITIAL_SERVICE_TYPES) {
-          const id = crypto.randomUUID();
-          await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
+      try {
+        const services = snapshot.docs.map(doc => doc.data() as ServiceType);
+        
+        if (snapshot.empty) {
+          console.log('Seeding initial service types...');
+          // Seed initial service types if none exist for this user
+          for (const st of INITIAL_SERVICE_TYPES) {
+            const id = uuidv4();
+            await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
+          }
+        } else {
+          setServiceTypes(services);
         }
-      } else {
-        setServiceTypes(services);
+      } catch (err) {
+        handleError(err, OperationType.LIST, 'serviceTypes');
       }
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'serviceTypes'));
+    }, (error) => handleError(error, OperationType.LIST, 'serviceTypes'));
 
     const qBookings = query(collection(db, 'bookings'), where('uid', '==', user.uid));
     const unsubBookings = onSnapshot(qBookings, (snapshot) => {
       setBookings(snapshot.docs.map(doc => doc.data() as Booking));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'bookings'));
+    }, (error) => handleError(error, OperationType.LIST, 'bookings'));
 
     const qExpenses = query(collection(db, 'expenses'), where('uid', '==', user.uid));
     const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
       setExpenses(snapshot.docs.map(doc => doc.data() as Expense));
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+    }, (error) => handleError(error, OperationType.LIST, 'expenses'));
 
     // Fallback loading state if snapshots are slow but empty
-    const timeout = setTimeout(() => setLoading(false), 3000);
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
 
     return () => {
       unsubClients();
@@ -159,7 +178,7 @@ export function useStore() {
       unsubExpenses();
       clearTimeout(timeout);
     };
-  }, [isAuthReady, user]);
+  }, [isAuthReady, user, isUnauthorized]);
 
   const addClient = async (client: Omit<Client, 'id' | 'createdAt' | 'uid'>) => {
     if (!user) return;
@@ -315,6 +334,7 @@ export function useStore() {
     isUnauthorized,
     resetUnauthorized,
     loading,
+    error,
     clients,
     serviceTypes,
     bookings,

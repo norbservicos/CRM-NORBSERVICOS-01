@@ -355,7 +355,7 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-900 truncate text-sm sm:text-base">{service.name}</p>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{service.duration} min</p>
+                      <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{service.estimatedTime}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-black text-blue-900 text-sm sm:text-base">{formatCurrency(service.defaultPrice)}</p>

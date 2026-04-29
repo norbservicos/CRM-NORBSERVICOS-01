@@ -29,25 +29,16 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.uid;
-    }
-
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
-    }
-
-    function uidNotModified() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+      return request.auth != null && resource != null && request.auth.uid == resource.data.uid;
     }
 
     function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "guilhermed952@gmail.com" && request.auth.token.email_verified == true));
+      return request.auth != null &&
+        (request.auth.token.email.lower() == "guilhermed952@gmail.com" && request.auth.token.email_verified == true);
     }
 
     function isValidEmail(email) {
@@ -63,44 +54,23 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidClient(data) {
-      return data.keys().hasAll(['id', 'name', 'phone', 'address', 'city', 'gender', 'createdAt', 'uid']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
-             data.address is string && data.address.size() > 0 && data.address.size() < 200 &&
-             data.city is string && data.city.size() > 0 && data.city.size() < 100 &&
-             data.gender in ['masculino', 'feminino'] &&
-             data.uid == request.auth.uid;
+      return data.uid == request.auth.uid &&
+             data.keys().hasAll(['id', 'name', 'phone', 'address', 'city', 'gender', 'createdAt', 'uid']);
     }
 
     function isValidServiceType(data) {
-      return data.keys().hasAll(['id', 'name', 'defaultPrice', 'estimatedTime', 'active', 'uid']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.defaultPrice is number && data.defaultPrice >= 0 &&
-             data.estimatedTime is string &&
-             data.active is bool &&
-             data.uid == request.auth.uid;
+      return data.uid == request.auth.uid &&
+             data.keys().hasAll(['id', 'name', 'defaultPrice', 'estimatedTime', 'active', 'uid']);
     }
 
     function isValidBooking(data) {
-      return data.keys().hasAll(['id', 'clientId', 'serviceTypeId', 'date', 'time', 'originalPrice', 'discount', 'finalPrice', 'status', 'createdAt', 'uid']) &&
-             data.clientId is string &&
-             data.serviceTypeId is string &&
-             data.date is string &&
-             data.time is string &&
-             data.originalPrice is number &&
-             data.discount is number &&
-             data.finalPrice is number &&
-             data.status in ['agendado', 'pendente', 'concluído', 'cancelado', 'perdido'] &&
-             data.uid == request.auth.uid;
+      return data.uid == request.auth.uid &&
+             data.keys().hasAll(['id', 'clientId', 'serviceTypeId', 'date', 'time', 'originalPrice', 'discount', 'finalPrice', 'status', 'createdAt', 'uid']);
     }
 
     function isValidExpense(data) {
-      return data.keys().hasAll(['id', 'description', 'amount', 'category', 'date', 'createdAt', 'uid']) &&
-             data.description is string && data.description.size() > 0 && data.description.size() < 200 &&
-             data.amount is number && data.amount >= 0 &&
-             data.category in ['investimento', 'operacional', 'manutenção', 'outro'] &&
-             data.date is string &&
-             data.uid == request.auth.uid;
+      return data.uid == request.auth.uid &&
+             data.keys().hasAll(['id', 'description', 'amount', 'category', 'date', 'createdAt', 'uid']);
     }
 
     // ===============================================================
@@ -109,29 +79,29 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidClient(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidClient(request.resource.data) && uidNotModified();
+      allow create: if isAuthenticated() && isValidClient(request.resource.data);
+      allow update: if isDocOwner() && isValidClient(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /serviceTypes/{serviceTypeId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidServiceType(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidServiceType(request.resource.data) && uidNotModified();
+      allow create: if isAuthenticated() && isValidServiceType(request.resource.data);
+      allow update: if isDocOwner() && isValidServiceType(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /bookings/{bookingId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidBooking(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidBooking(request.resource.data) && uidNotModified();
+      allow create: if isAuthenticated() && isValidBooking(request.resource.data);
+      allow update: if isDocOwner() && isValidBooking(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /expenses/{expenseId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidExpense(request.resource.data) && uidUnchanged();
-      allow update: if isDocOwner() && isValidExpense(request.resource.data) && uidNotModified();
+      allow create: if isAuthenticated() && isValidExpense(request.resource.data);
+      allow update: if isDocOwner() && isValidExpense(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
 

@@ -33,7 +33,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
     phone: '',
     address: '',
     city: '',
-    gender: 'masculino' as const,
+    gender: 'masculino' as import('../types').Gender,
     observations: ''
   });
 
@@ -66,7 +66,7 @@ export default function Clients({ store }: { store: ReturnType<typeof useStore> 
         phone: client.phone,
         address: client.address,
         city: client.city,
-        gender: client.gender || 'masculino',
+        gender: client.gender,
         observations: client.observations || ''
       });
     } else {

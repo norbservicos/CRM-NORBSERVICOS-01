@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,6 +10,7 @@ import {
   Menu, 
   X,
   PlusCircle,
+  Sparkles,
   Search,
   LogIn,
   LogOut,
@@ -28,12 +29,22 @@ import Agenda from './pages/Agenda';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
+import AiBudget from './pages/AiBudget';
 import { Booking } from './types';
 import { useStore } from './hooks/useStore';
 
 // Error Boundary Component
-class ErrorBoundary extends (React.Component as any) {
-  constructor(props: any) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -42,7 +53,7 @@ class ErrorBoundary extends (React.Component as any) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
@@ -50,12 +61,17 @@ class ErrorBoundary extends (React.Component as any) {
     if (this.state.hasError) {
       let errorMessage = "Ocorreu um erro inesperado.";
       try {
-        const parsed = JSON.parse(this.state.error?.message || "");
-        if (parsed.error && parsed.error.includes("insufficient permissions")) {
-          errorMessage = "Você não tem permissão para realizar esta ação ou acessar estes dados.";
+        if (this.state.error?.message) {
+          const message = this.state.error.message;
+          if (message.startsWith('{')) {
+            const parsed = JSON.parse(message);
+            if (parsed.error && parsed.error.toLowerCase().includes("insufficient permissions")) {
+              errorMessage = "Você não tem permissão para realizar esta ação ou acessar estes dados.";
+            }
+          }
         }
       } catch {
-        // Not a JSON error
+        // Not a JSON error or other issue
       }
 
       return (
@@ -81,26 +97,28 @@ class ErrorBoundary extends (React.Component as any) {
   }
 }
 
-type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses';
+type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses' | 'ai-budget';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const store = useStore();
 
   useEffect(() => {
-    const handleResize = () => {
+    // Initial and responsive checks
+    const checkSize = () => {
       const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
-      if (mobile) setIsSidebarOpen(false);
-      else setIsSidebarOpen(true);
+      setIsSidebarOpen(!mobile);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
   }, []);
 
   const handleLogin = async () => {
@@ -199,6 +217,11 @@ function MainApp() {
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-slate-500 font-medium animate-pulse">Carregando seus dados...</p>
+          {store.error && (
+            <p className="text-xs text-red-500 max-w-xs text-center mt-4">
+              {store.error}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -206,6 +229,7 @@ function MainApp() {
 
   const menuItems: { id: string; label: string; icon: any; onClick?: () => void }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'ai-budget', label: 'Orçamento AI', icon: Sparkles },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'services', label: 'Serviços', icon: ClipboardList },
     { id: 'finance', label: 'Financeiro', icon: DollarSign },
@@ -234,6 +258,7 @@ function MainApp() {
       case 'finance': return <Finance store={store} />;
       case 'expenses': return <Expenses store={store} />;
       case 'reports': return <Reports store={store} />;
+      case 'ai-budget': return <AiBudget />;
       default: return <Dashboard store={store} setActiveTab={setActiveTab} />;
     }
   };

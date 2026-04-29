@@ -57,7 +57,7 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
                          e.category.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesPeriod && matchesSearch;
-  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }).sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
 
   const isCurrentMonth = isSameMonth(selectedDate, new Date());
 
