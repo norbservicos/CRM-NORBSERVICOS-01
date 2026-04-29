@@ -35,6 +35,7 @@ interface AiBudgetResult {
 
 export default function AiBudget() {
   const [image, setImage] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiBudgetResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function AiBudget() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
+        setImageMimeType(file.type || 'image/jpeg');
         setResult(null);
         setError(null);
       };
@@ -76,7 +78,7 @@ export default function AiBudget() {
       const base64Data = image.split(',')[1];
       const imagePart = {
         inlineData: {
-          mimeType: "image/jpeg",
+          mimeType: imageMimeType,
           data: base64Data,
         },
       };
