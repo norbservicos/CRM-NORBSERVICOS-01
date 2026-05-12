@@ -58,28 +58,52 @@ export default function Budget() {
   const exportToPdf = async () => {
     if (!budgetRef.current) return;
     setGeneratingPdf(true);
+    
     try {
+      // Scroll to top to avoid capture issues with html2canvas
+      window.scrollTo(0, 0);
+      
       const canvas = await html2canvas(budgetRef.current, {
-        scale: 3, // Higher scale for better quality
+        scale: 2, // 2 is better for combined quality/performance
         useCORS: true,
-        backgroundColor: '#ffffff'
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: budgetRef.current.scrollWidth,
+        windowHeight: budgetRef.current.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Ensure cloned element is visible for capture
+          const element = clonedDoc.getElementById('budget-document');
+          if (element) {
+            element.style.opacity = '1';
+            element.style.display = 'block';
+          }
+        }
       });
-      const imgData = canvas.toDataURL('image/png');
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Orcamento_${clientName || 'Cliente'}_${new Date().toLocaleDateString()}.pdf`);
+      // If content is larger than one page, it will be scaled to fit
+      // For more complex multi-page logic, we'd need more steps, 
+      // but for a one-page budget, this is the most reliable.
+      const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+      const finalWidth = imgProps.width * ratio;
+      const finalHeight = imgProps.height * ratio;
+      
+      pdf.addImage(imgData, 'PNG', (pdfWidth - finalWidth) / 2, 0, finalWidth, finalHeight);
+      pdf.save(`Orcamento_${clientName.replace(/\s+/g, '_') || 'Cliente'}.pdf`);
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
-      alert('Erro ao gerar PDF. Tente novamente.');
+      alert('Erro ao gerar PDF. Tente novamente ou use outro navegador.');
     } finally {
       setGeneratingPdf(false);
     }
@@ -219,6 +243,7 @@ export default function Budget() {
           
           <div 
             ref={budgetRef}
+            id="budget-document"
             className="bg-white p-12 space-y-10 w-full shadow-2xl rounded-3xl border border-slate-100 min-h-[800px] flex flex-col"
           >
             {/* PDF Header */}
