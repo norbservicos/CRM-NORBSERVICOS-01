@@ -44,7 +44,7 @@ export default function AiBudget() {
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiBudgetResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; submessage?: string } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
   
   // Budget customization state
@@ -57,11 +57,54 @@ export default function AiBudget() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const budgetRef = useRef<HTMLDivElement>(null);
 
+  const compressImage = (base64Str: string): Promise<{ data: string; mimeType: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1024;
+        const MAX_HEIGHT = 1024;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Falha ao criar contexto do canvas'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // Compress as JPEG
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        resolve({
+          data: compressedBase64.split(',')[1],
+          mimeType: 'image/jpeg'
+        });
+      };
+      img.onerror = (err) => reject(err);
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError('A imagem deve ter menos de 10MB');
+      if (file.size > 20 * 1024 * 1024) {
+        setError({ message: 'A imagem é muito grande (Máx 20MB)' });
         return;
       }
       const reader = new FileReader();
@@ -87,14 +130,24 @@ export default function AiBudget() {
     setLoading(true);
     setError(null);
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      setError({ 
+        message: 'A chave da API (GEMINI_API_KEY) não foi encontrada.',
+        submessage: 'Verifique se a chave está configurada no painel Settings > Secrets.' 
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const { data: compressedData, mimeType: finalMimeType } = await compressImage(image);
+      const ai = new GoogleGenAI({ apiKey });
       
-      const base64Data = image.split(',')[1];
       const imagePart = {
         inlineData: {
-          mimeType: imageMimeType,
-          data: base64Data,
+          mimeType: finalMimeType,
+          data: compressedData,
         },
       };
 
@@ -158,9 +211,26 @@ export default function AiBudget() {
       setResult(data);
       setPixPrice(data.priceRange.min.toString());
       setCardPrice(data.priceRange.max.toString());
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro na IA:', err);
-      setError('Não foi possível gerar o orçamento. Tente novamente com outra imagem.');
+      const errorMessage = err?.message || '';
+      
+      if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('API_KEY_INVALID')) {
+        setError({
+          message: 'Acesso Negado à API',
+          submessage: 'Verifique se a sua chave API nas configurações está correta e ativa.'
+        });
+      } else if (errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        setError({
+          message: 'Limite de Cota Excedido',
+          submessage: 'Muitas solicitações seguidas. Aguarde um momento ou faça upgrade da sua chave API.'
+        });
+      } else {
+        setError({
+          message: 'Não foi possível gerar o orçamento',
+          submessage: 'Tente novamente com outra imagem ou verifique sua conexão.'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -276,9 +346,12 @@ export default function AiBudget() {
           </button>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-shake">
-              <AlertCircle size={20} />
-              <p className="text-sm font-medium">{error}</p>
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 text-red-600 animate-shake">
+              <AlertCircle size={20} className="shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-black">{error.message}</p>
+                {error.submessage && <p className="text-xs opacity-80 mt-1">{error.submessage}</p>}
+              </div>
             </div>
           )}
 
