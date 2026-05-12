@@ -11,10 +11,16 @@ import {
   Copy,
   Check,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Share2,
+  CreditCard,
+  User
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { cn } from '../utils/utils';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 interface AiBudgetResult {
   serviceName: string;
@@ -40,13 +46,22 @@ export default function AiBudget() {
   const [result, setResult] = useState<AiBudgetResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
+  
+  // Budget customization state
+  const [clientName, setClientName] = useState('');
+  const [pixPrice, setPixPrice] = useState('');
+  const [cardPrice, setCardPrice] = useState('');
+  const [showBothPayments, setShowBothPayments] = useState(true);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const budgetRef = useRef<HTMLDivElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('A imagem deve ter menos de 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        setError('A imagem deve ter menos de 10MB');
         return;
       }
       const reader = new FileReader();
@@ -141,6 +156,8 @@ export default function AiBudget() {
 
       const data = JSON.parse(response.text.trim());
       setResult(data);
+      setPixPrice(data.priceRange.min.toString());
+      setCardPrice(data.priceRange.max.toString());
     } catch (err) {
       console.error('Erro na IA:', err);
       setError('Não foi possível gerar o orçamento. Tente novamente com outra imagem.');
@@ -149,8 +166,38 @@ export default function AiBudget() {
     }
   };
 
+  const exportToPdf = async () => {
+    if (!budgetRef.current) return;
+    setGeneratingPdf(true);
+    try {
+      const canvas = await html2canvas(budgetRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Orcamento_${clientName || 'Cliente'}_${new Date().toLocaleDateString()}.pdf`);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2">
@@ -192,7 +239,7 @@ export default function AiBudget() {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-slate-900">Importar Referência</p>
-                  <p className="text-sm text-slate-500">Toque aqui para enviar uma foto ou usar a câmera</p>
+                  <p className="text-sm text-slate-500">Aceita qualquer formato de imagem</p>
                 </div>
               </div>
             )}
@@ -234,14 +281,89 @@ export default function AiBudget() {
               <p className="text-sm font-medium">{error}</p>
             </div>
           )}
+
+          {result && (
+            <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center gap-3 text-blue-900 mb-2">
+                <FileText size={24} />
+                <h3 className="font-black text-xl">Preencher Orçamento</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
+                    <User size={12} /> Nome do Cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-blue-900/10"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
+                      <DollarSign size={12} /> Pix/Dinheiro (R$)
+                    </label>
+                    <input
+                      type="number"
+                      value={pixPrice}
+                      onChange={(e) => setPixPrice(e.target.value)}
+                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-blue-900/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
+                      <CreditCard size={12} /> Cartão (R$)
+                    </label>
+                    <input
+                      type="number"
+                      value={cardPrice}
+                      onChange={(e) => setCardPrice(e.target.value)}
+                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-blue-900/10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="showBoth" 
+                      checked={showBothPayments}
+                      onChange={(e) => setShowBothPayments(e.target.checked)}
+                      className="w-5 h-5 rounded-lg text-blue-900 focus:ring-blue-900" 
+                    />
+                    <label htmlFor="showBoth" className="text-sm font-bold text-slate-700">Mostrar PIX e Cartão no PDF</label>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={exportToPdf}
+                disabled={generatingPdf}
+                className="w-full py-4 bg-blue-900 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-black transition-all shadow-lg"
+              >
+                {generatingPdf ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Share2 size={20} />
+                )}
+                Exportar Orçamento (PDF)
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Results Section */}
+        {/* Results / Preview Section */}
         <div className="relative min-h-[400px]">
           {!result && !loading && (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white/50 rounded-[40px] border border-slate-100 border-dashed">
               <Sparkles size={48} className="text-slate-200 mb-4" />
-              <p className="text-slate-400 font-medium">Aguardando análise da imagem para gerar os detalhes do orçamento.</p>
+              <p className="text-slate-400 font-medium">Aguardando análise da imagem...</p>
             </div>
           )}
 
@@ -251,67 +373,120 @@ export default function AiBudget() {
                 <Brain className="text-blue-900 animate-bounce" size={24} />
               </div>
               <p className="text-blue-900 font-black">Consultando Mercado Regional...</p>
-              <p className="text-slate-400 text-xs mt-2">Buscando referências no Vale do Aço</p>
+              <p className="text-slate-400 text-xs mt-2">Vale do Aço, MG</p>
             </div>
           )}
 
           {result && (
-            <div className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 space-y-8 animate-in slide-in-from-right-4 duration-500">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-blue-900 font-bold uppercase tracking-wider text-xs">
-                  <Sparkles size={14} />
-                  Análise Finalizada
-                </div>
-                <h2 className="text-3xl font-black text-slate-900 leading-tight">{result.serviceName}</h2>
-                <p className="text-slate-500 text-sm">{result.description}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-6 rounded-[24px] space-y-2">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <DollarSign size={18} />
-                    <span className="text-xs font-bold uppercase">Preço Estimado</span>
-                  </div>
-                  <p className="text-2xl font-black text-blue-900">
-                    R$ {result.priceRange.min} - {result.priceRange.max}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-6 rounded-[24px] space-y-2">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Clock size={18} />
-                    <span className="text-xs font-bold uppercase">Tempo Médio</span>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900">
-                    {result.estimatedTime}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-black text-slate-900 flex items-center gap-2">
-                  <Zap className="text-orange-500" size={18} />
-                  Dica de Upgrade
-                </h3>
-                <div className="bg-orange-50 p-5 rounded-[24px] border border-orange-100">
-                  <p className="text-sm text-orange-900 leading-relaxed font-medium">
-                    {result.salesTip}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-black text-slate-900">Observações Técnicas</h3>
-                <div className="grid gap-2">
-                  {result.technicalDetails.map((detail, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-slate-600 text-sm group">
-                      <div className="w-1.5 h-1.5 bg-blue-900 rounded-full group-hover:scale-150 transition-transform" />
-                      {detail}
+            <div className="space-y-6">
+              {/* PDF Preview Document Area */}
+              <div 
+                ref={budgetRef}
+                className="bg-white p-10 space-y-8 w-full max-w-[600px] border border-slate-100 shadow-xl mx-auto rounded-3xl"
+              >
+                {/* Header with Logo */}
+                <div className="flex justify-between items-start border-b-2 border-blue-900/10 pb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white rotate-3">
+                      <Sparkles size={28} />
                     </div>
-                  ))}
+                    <div>
+                      <h3 className="font-black text-2xl text-slate-900 tracking-tighter">NORB PRO</h3>
+                      <p className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-block uppercase tracking-widest mt-1">Gestão Inteligente</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Data de Emissão</p>
+                    <p className="text-lg font-black text-slate-900">{new Date().toLocaleDateString('pt-BR')}</p>
+                  </div>
+                </div>
+
+                {/* Client Box */}
+                <div className="bg-slate-900 p-6 rounded-2xl flex items-center justify-between text-white">
+                  <div>
+                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Orçamento para</span>
+                    <h4 className="text-xl font-black">{clientName || 'Cliente'}</h4>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Procedência</span>
+                    <p className="text-xs font-bold">Vale do Aço - MG</p>
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[10px] font-black text-blue-900 uppercase tracking-widest">Descrição do Serviço</span>
+                    <h2 className="text-3xl font-black text-slate-900 mt-2">{result.serviceName}</h2>
+                    <p className="text-slate-600 text-sm mt-3 leading-relaxed border-l-4 border-blue-900 pl-4 italic">
+                      {result.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-6">
+                    <div className="p-4 bg-slate-50 rounded-2xl">
+                      <span className="text-[10px] font-black text-slate-400 uppercase">Tempo Estipulado</span>
+                      <p className="text-lg font-bold text-slate-900">{result.estimatedTime}</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl">
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Validade Orçamento</span>
+                      <p className="text-lg font-bold text-slate-900">10 Dias</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Análise Técnica</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                       {result.technicalDetails.map((detail, i) => (
+                         <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                           <div className="w-1.5 h-1.5 bg-blue-900 rounded-full shrink-0" />
+                           {detail}
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="space-y-3 pt-6">
+                   <span className="text-[10px] font-black text-slate-400 uppercase">Formas de Pagamento</span>
+                   <div className="grid gap-3">
+                      {(showBothPayments || parseFloat(pixPrice) > 0) && (
+                        <div className="p-6 bg-blue-50 border-2 border-blue-100 rounded-3xl flex justify-between items-center">
+                          <div>
+                            <p className="text-xs font-black text-blue-900 uppercase">À Vista (Pix/Dinheiro)</p>
+                            <p className="text-4xl font-black text-slate-900">R$ {pixPrice || '0,00'}</p>
+                          </div>
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-900 border border-blue-100 shadow-sm">
+                            <Zap size={24} />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {(showBothPayments || parseFloat(cardPrice) > 0) && (
+                        <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl flex justify-between items-center">
+                          <div>
+                            <p className="text-xs font-black text-slate-400 uppercase">Cartão de Crédito</p>
+                            <p className="text-3xl font-black text-slate-900">R$ {cardPrice || '0,00'}</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-1 italic italic">Consulte taxas de parcelamento</p>
+                          </div>
+                          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
+                            <CreditCard size={24} />
+                          </div>
+                        </div>
+                      )}
+                   </div>
+                </div>
+
+                {/* Footer Info */}
+                <div className="pt-10 border-t border-slate-100 flex justify-between items-center opacity-40">
+                  <p className="text-[10px] font-bold text-slate-500">NORB GESTÃO PRO • INTELIGÊNCIA EM ESTÉTICA</p>
+                  <p className="text-[10px] font-bold text-slate-500 italic">Vale do Aço - MG</p>
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4 border-t border-slate-100">
+               {/* Templates Area */}
+               <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
                 <h3 className="font-black text-slate-900 flex items-center gap-2">
                   <MessageSquare size={18} className="text-blue-900" />
                   Modelos de Mensagem
@@ -343,31 +518,8 @@ export default function AiBudget() {
                   ))}
                 </div>
               </div>
-
-              <button 
-                className="w-full flex items-center justify-between p-6 bg-slate-900 text-white rounded-[24px] font-bold hover:bg-black transition-all group shadow-xl shadow-slate-900/10"
-                onClick={() => alert('Orçamento aplicado! Agende o cliente agora.')}
-              >
-                <span>Usar este Orçamento</span>
-                <MessageSquare size={20} className="group-hover:translate-x-1 transition-transform" />
-              </button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Region Info */}
-      <div className="bg-blue-900 rounded-[32px] p-8 text-white flex flex-col md:flex-row items-center gap-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-          <Brain size={32} />
-        </div>
-        <div className="flex-1 space-y-2 text-center md:text-left relative z-10">
-          <h3 className="text-xl font-black">Precisão Regional Vale do Aço</h3>
-          <p className="text-blue-100 text-sm leading-relaxed max-w-2xl">
-            Nossa IA foi calibrada com dados de mercado de Ipatinga, Coronel Fabriciano, Timóteo e região. 
-            As estimativas consideram a complexidade técnica e a valorização profissional de Minas Gerais.
-          </p>
         </div>
       </div>
     </div>
