@@ -29,7 +29,7 @@ import Agenda from './pages/Agenda';
 import Finance from './pages/Finance';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
-import AiBudget from './pages/AiBudget';
+import Budget from './pages/Budget';
 import { Booking } from './types';
 import { useStore } from './hooks/useStore';
 
@@ -97,7 +97,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses' | 'ai-budget';
+type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses' | 'budget';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -229,7 +229,7 @@ function MainApp() {
 
   const menuItems: { id: string; label: string; icon: any; onClick?: () => void }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'ai-budget', label: 'Orçamento AI', icon: Sparkles },
+    { id: 'budget', label: 'Orçamento', icon: FileText },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'services', label: 'Serviços', icon: ClipboardList },
     { id: 'finance', label: 'Financeiro', icon: DollarSign },
@@ -258,7 +258,7 @@ function MainApp() {
       case 'finance': return <Finance store={store} />;
       case 'expenses': return <Expenses store={store} />;
       case 'reports': return <Reports store={store} />;
-      case 'ai-budget': return <AiBudget />;
+      case 'budget': return <Budget />;
       default: return <Dashboard store={store} setActiveTab={setActiveTab} />;
     }
   };
