@@ -60,27 +60,23 @@ export default function Budget() {
     setGeneratingPdf(true);
     
     try {
-      // Scroll to top to avoid capture issues with html2canvas
+      const element = budgetRef.current;
+      if (!element) return;
+
+      // Ensure the capture starts from the top
       window.scrollTo(0, 0);
       
-      const canvas = await html2canvas(budgetRef.current, {
-        scale: 2, // 2 is better for combined quality/performance
+      const canvas = await html2canvas(element, {
+        scale: 1.5, // Lower scale for better compatibility/memory usage
         useCORS: true,
-        logging: false,
+        allowTaint: true,
         backgroundColor: '#ffffff',
-        windowWidth: budgetRef.current.scrollWidth,
-        windowHeight: budgetRef.current.scrollHeight,
-        onclone: (clonedDoc) => {
-          // Ensure cloned element is visible for capture
-          const element = clonedDoc.getElementById('budget-document');
-          if (element) {
-            element.style.opacity = '1';
-            element.style.display = 'block';
-          }
-        }
+        logging: false,
+        width: element.offsetWidth,
+        height: element.offsetHeight
       });
       
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -90,20 +86,44 @@ export default function Budget() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgProps = pdf.getImageProperties(imgData);
+      
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
-      // If content is larger than one page, it will be scaled to fit
-      // For more complex multi-page logic, we'd need more steps, 
-      // but for a one-page budget, this is the most reliable.
-      const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-      const finalWidth = imgProps.width * ratio;
-      const finalHeight = imgProps.height * ratio;
+      // If content is larger than one page, scale it down to fit
+      if (imgHeight > pdfHeight) {
+        const ratio = pdfHeight / imgHeight;
+        const finalWidth = pdfWidth * ratio;
+        const finalHeight = pdfHeight;
+        pdf.addImage(imgData, 'JPEG', (pdfWidth - finalWidth) / 2, 0, finalWidth, finalHeight);
+      } else {
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
+      }
       
-      pdf.addImage(imgData, 'PNG', (pdfWidth - finalWidth) / 2, 0, finalWidth, finalHeight);
-      pdf.save(`Orcamento_${clientName.replace(/\s+/g, '_') || 'Cliente'}.pdf`);
+      const fileName = `Orcamento_${clientName.trim().replace(/\s+/g, '_') || 'Cliente'}.pdf`;
+      const pdfBlob = pdf.output('blob');
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+      // Check for navigator.share support
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Orçamento - ' + (clientName || 'Cliente'),
+            text: 'Olá! Segue o orçamento solicitado.',
+          });
+        } catch (shareErr: any) {
+          if (shareErr.name !== 'AbortError') {
+            console.error('Erro ao compartilhar:', shareErr);
+            pdf.save(fileName);
+          }
+        }
+      } else {
+        // Fallback to direct download
+        pdf.save(fileName);
+      }
     } catch (err) {
-      console.error('Erro ao gerar PDF:', err);
-      alert('Erro ao gerar PDF. Tente novamente ou use outro navegador.');
+      console.error('Erro detalhado ao gerar PDF:', err);
+      alert('Houve um erro ao gerar o PDF. Tente preencher novamente ou use outro navegador.');
     } finally {
       setGeneratingPdf(false);
     }
@@ -180,6 +200,7 @@ export default function Budget() {
               </label>
               <input
                 type="number"
+                step="0.01"
                 placeholder="Ex: 250,00"
                 value={totalPrice}
                 onChange={(e) => setTotalPrice(e.target.value)}
@@ -206,6 +227,7 @@ export default function Budget() {
               </label>
               <input
                 type="number"
+                step="1"
                 placeholder="Ex: 5"
                 value={pixDiscount}
                 onChange={(e) => setPixDiscount(e.target.value)}
@@ -224,7 +246,7 @@ export default function Budget() {
             ) : (
               <>
                 <Share2 size={24} />
-                Exportar para PDF
+                Enviar Orçamento (WhatsApp/PDF)
               </>
             )}
           </button>
