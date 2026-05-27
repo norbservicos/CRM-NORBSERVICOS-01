@@ -344,7 +344,6 @@ export default function Budget() {
                 </div>
                 <div>
                   <h3 className="font-black text-3xl tracking-tighter" style={{ color: '#0f172a' }}>NORB PRO</h3>
-                  <p className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block uppercase tracking-widest mt-1" style={{ color: '#2563eb', backgroundColor: '#eff6ff' }}>Sua Marca Aqui</p>
                 </div>
               </div>
               <div className="text-right">
@@ -358,10 +357,6 @@ export default function Budget() {
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Orçamento para</span>
                 <h4 className="text-2xl font-black mt-1" style={{ color: '#ffffff' }}>{clientName || 'Nome do Cliente'}</h4>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>Documento Nº</span>
-                <p className="text-sm font-black" style={{ color: '#ffffff' }}>#BUD-{Math.floor(Math.random() * 10000)}</p>
               </div>
             </div>
 
@@ -421,14 +416,7 @@ export default function Budget() {
                 </div>
               </div>
 
-              <div className="p-6 rounded-3xl mt-4" style={{ backgroundColor: '#f8fafc' }}>
-                <p className="text-[10px] font-black uppercase mb-2" style={{ color: '#94a3b8' }}>Informações Adicionais</p>
-                <p className="text-[11px] leading-relaxed font-medium" style={{ color: '#475569' }}>
-                  Este orçamento é válido por 7 dias a partir da data de emissão. 
-                  Para pagamentos via Pix, utilize nossa chave cadastrada. 
-                  Parcelamentos no cartão estão sujeitos a taxas da operadora.
-                </p>
-              </div>
+
             </div>
 
             {/* Footer */}
