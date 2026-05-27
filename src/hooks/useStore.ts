@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   collection, 
@@ -74,6 +74,7 @@ const INITIAL_SERVICE_TYPES: Omit<ServiceType, 'uid'>[] = [
 ];
 
 export function useStore() {
+  const canonicalMapRef = useRef<Record<string, string>>({});
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -148,7 +149,65 @@ export function useStore() {
             await setDoc(doc(db, 'serviceTypes', id), { ...st, id, uid: user.uid });
           }
         } else {
-          setServiceTypes(services);
+          // Group services by trimmed lowercase name to identify and eliminate duplicates
+          const groups: Record<string, ServiceType[]> = {};
+          for (const s of services) {
+            const key = s.name.trim().toLowerCase();
+            if (!groups[key]) {
+              groups[key] = [];
+            }
+            groups[key].push(s);
+          }
+
+          const uniqueServices: ServiceType[] = [];
+          const duplicatesToDelete: ServiceType[] = [];
+          const canonicalMap: Record<string, ServiceType> = {};
+          const alternateToCanonicalIdMap: Record<string, string> = {};
+
+          for (const key of Object.keys(groups)) {
+            const list = groups[key];
+            const canonical = list[0];
+            uniqueServices.push(canonical);
+            for (let i = 1; i < list.length; i++) {
+              duplicatesToDelete.push(list[i]);
+              canonicalMap[list[i].id] = canonical;
+              alternateToCanonicalIdMap[list[i].id] = canonical.id;
+            }
+          }
+
+          canonicalMapRef.current = alternateToCanonicalIdMap;
+          setServiceTypes(uniqueServices);
+
+          // Perform cleanup of duplicate service types and migrate any related bookings
+          if (duplicatesToDelete.length > 0) {
+            console.log(`Found ${duplicatesToDelete.length} duplicate service types. Executing migration...`);
+            (async () => {
+              try {
+                // Get current bookings to check for any references to duplicate IDs
+                const qBookings = query(collection(db, 'bookings'), where('uid', '==', user.uid));
+                const bookingsSnap = await getDocs(qBookings);
+                const allBookings = bookingsSnap.docs.map(doc => doc.data() as Booking);
+
+                for (const duplicate of duplicatesToDelete) {
+                  const canonical = canonicalMap[duplicate.id];
+                  const affectedBookings = allBookings.filter(b => b.serviceTypeId === duplicate.id);
+
+                  if (affectedBookings.length > 0) {
+                    console.log(`Migrating ${affectedBookings.length} bookings from duplicate service ${duplicate.id} (${duplicate.name}) to canonical ID ${canonical.id}`);
+                    for (const booking of affectedBookings) {
+                      await updateDoc(doc(db, 'bookings', booking.id), { serviceTypeId: canonical.id });
+                    }
+                  }
+
+                  console.log(`Deleting duplicate service type from Firestore: ${duplicate.id} (${duplicate.name})`);
+                  await deleteDoc(doc(db, 'serviceTypes', duplicate.id));
+                }
+                console.log('Service types migration successfully completed.');
+              } catch (err) {
+                console.error('Error during service types migration:', err);
+              }
+            })();
+          }
         }
       } catch (err) {
         handleError(err, OperationType.LIST, 'serviceTypes');
@@ -157,7 +216,15 @@ export function useStore() {
 
     const qBookings = query(collection(db, 'bookings'), where('uid', '==', user.uid));
     const unsubBookings = onSnapshot(qBookings, (snapshot) => {
-      setBookings(snapshot.docs.map(doc => doc.data() as Booking));
+      const bookingsRaw = snapshot.docs.map(doc => doc.data() as Booking);
+      const mappedBookings = bookingsRaw.map(b => {
+        const canonicalId = canonicalMapRef.current[b.serviceTypeId];
+        if (canonicalId) {
+          return { ...b, serviceTypeId: canonicalId };
+        }
+        return b;
+      });
+      setBookings(mappedBookings);
     }, (error) => handleError(error, OperationType.LIST, 'bookings'));
 
     const qExpenses = query(collection(db, 'expenses'), where('uid', '==', user.uid));
@@ -245,6 +312,14 @@ export function useStore() {
   };
 
   const updateServiceType = async (id: string, service: Partial<ServiceType>) => {
+    if (service.name) {
+      const existingService = serviceTypes.find(s => 
+        s.id !== id && s.name.toLowerCase().trim() === service.name!.toLowerCase().trim()
+      );
+      if (existingService) {
+        throw new Error('SERVICE_EXISTS');
+      }
+    }
     try {
       await updateDoc(doc(db, 'serviceTypes', id), service);
     } catch (error) {

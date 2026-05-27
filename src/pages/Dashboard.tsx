@@ -194,6 +194,27 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         value
       })).sort((a, b) => b.value - a.value);
 
+      // Calculate city distribution for COMPLETED bookings
+      const cityDistributionMap: Record<string, number> = {};
+      completedBookings.forEach(b => {
+        const client = store.clients.find(c => c.id === b.clientId);
+        let cityName = 'Não Informada';
+        if (client?.city) {
+          const rawCity = client.city.trim();
+          cityName = rawCity
+            .split(' ')
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        }
+        cityDistributionMap[cityName] = (cityDistributionMap[cityName] || 0) + 1;
+      });
+
+      const cityDistribution = Object.entries(cityDistributionMap).map(([name, value]) => ({
+        name,
+        value
+      })).sort((a, b) => b.value - a.value);
+
       return { 
         totalMonth, 
         scheduled, 
@@ -208,7 +229,8 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         womenCount, 
         otherGenderCount,
         paymentMethods,
-        typeDistribution 
+        typeDistribution,
+        cityDistribution
       };
     } catch (err) {
       console.error('Error calculating stats:', err);
@@ -217,7 +239,8 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         totalRevenue: 0, receivedValue: 0, toReceiveValue: 0,
         totalExpenses: 0, profit: 0, menCount: 0, womenCount: 0,
         otherGenderCount: 0, paymentMethods: { pix: 0, dinheiro: 0, cartão: 0 },
-        typeDistribution: []
+        typeDistribution: [],
+        cityDistribution: []
       };
     }
   }, [store.bookings, store.expenses, filterMode, selectedDate, startDate, endDate, filterType, store.serviceTypes, store.clients]);
@@ -579,9 +602,9 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         {/* Status Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold mb-6">Status dos Serviços</h3>
-          <div className="h-[250px] w-full">
+          <div className="h-[250px] w-full min-w-0">
             {statusChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie
                     data={statusChartData}
@@ -611,8 +634,8 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         {/* Gender Distribution Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold mb-6">Gênero dos Clientes</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <PieChart>
                 <Pie
                   data={genderData}
@@ -637,8 +660,8 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         {/* Payment Method Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold mb-6">Formas de Pagamento</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={paymentData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
@@ -659,9 +682,9 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         {/* Service Type Distribution Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold mb-6">Distribuição por Tipo de Serviço</h3>
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full min-w-0">
             {stats.typeDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie
                     data={stats.typeDistribution}
@@ -688,6 +711,43 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
             ) : (
               <div className="h-full flex items-center justify-center text-slate-400 italic">
                 Nenhum serviço registrado.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* City Distribution Chart */}
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold mb-6">Serviços por Cidade</h3>
+          <div className="h-[300px] w-full min-w-0">
+            {stats.cityDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <PieChart>
+                  <Pie
+                    data={stats.cityDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {stats.cityDistribution.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => {
+                      const percentage = ((value / (stats.completed || 1)) * 100).toFixed(1);
+                      return [`${value} (${percentage}%)`, 'Quantidade'];
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 italic">
+                Nenhum serviço registrado com cidade.
               </div>
             )}
           </div>
