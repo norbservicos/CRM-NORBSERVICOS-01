@@ -357,9 +357,6 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                       <p className="font-bold text-slate-900 truncate text-sm sm:text-base">{service.name}</p>
                       <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{service.estimatedTime}</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-black text-blue-900 text-sm sm:text-base">{formatCurrency(service.defaultPrice)}</p>
-                    </div>
                   </div>
                   {service.description && (
                     <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1 mt-2">{service.description}</p>
