@@ -55,7 +55,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
 
   const inactiveClients = useMemo(() => {
     try {
-      const fourMonthsAgo = subMonths(new Date(), 4);
+      const sixMonthsAgo = subMonths(new Date(), 6);
       const concluídoBookings = store.bookings.filter(b => b.status === 'concluído');
       
       return store.clients.reduce((acc: any[], client) => {
@@ -67,14 +67,14 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         if (!lastBooking) return acc;
         
         const lastBookingDate = parseDate(lastBooking.date);
-        const isInactive = isBefore(lastBookingDate, fourMonthsAgo);
+        const isInactive = isBefore(lastBookingDate, sixMonthsAgo);
         
         if (!isInactive) return acc;
         
         if (client.lastNotificationDismissedAt) {
           try {
             const dismissedAt = new Date(client.lastNotificationDismissedAt);
-            if (!isBefore(dismissedAt, fourMonthsAgo)) {
+            if (!isBefore(dismissedAt, sixMonthsAgo)) {
               return acc;
             }
           } catch (e) {
@@ -345,7 +345,7 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
                   <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-slate-900">Clientes Inativos</h3>
-                      <p className="text-[10px] text-slate-500 font-medium">Mais de 4 meses sem serviços concluídos</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Mais de 6 meses sem serviços concluídos</p>
                     </div>
                     <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 p-1">
                       <XCircle size={18} />
@@ -402,18 +402,11 @@ export default function Dashboard({ store, setActiveTab }: DashboardProps) {
         <div className="flex items-center gap-2 md:gap-3">
           <button 
             onClick={() => setShowValues(!showValues)}
-            className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 p-2 rounded-xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center"
+            className="bg-white border border-slate-200 text-slate-700 p-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center"
             title={showValues ? "Ocultar valores" : "Mostrar valores"}
           >
             {showValues ? <EyeOff size={18} /> : <Eye size={18} />}
             <span className="ml-2 text-xs font-bold md:hidden">{showValues ? "Ocultar" : "Mostrar"}</span>
-          </button>
-          <button 
-            onClick={generateReport}
-            className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-700 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <Download size={16} className="mr-2" />
-            Relatório
           </button>
         </div>
       </div>
