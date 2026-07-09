@@ -19,6 +19,7 @@ import { Expense, ExpenseCategory } from '../types';
 import { cn, formatCurrency, parseDate } from '../utils/utils';
 import { format, startOfMonth, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { CurrencyInput } from '../components/CurrencyInput';
 
 export default function Expenses({ store }: { store: ReturnType<typeof useStore> }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -426,13 +427,11 @@ export default function Expenses({ store }: { store: ReturnType<typeof useStore>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor (R$)</label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
+                    <CurrencyInput 
                       required
-                      type="number" 
-                      step="0.01"
-                      className="w-full pl-10 rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900"
+                      className="w-full pl-10 rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900 font-bold text-slate-900"
                       value={formData.amount}
-                      onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value)})}
+                      onChange={(val) => setFormData({...formData, amount: val})}
                     />
                   </div>
                 </div>

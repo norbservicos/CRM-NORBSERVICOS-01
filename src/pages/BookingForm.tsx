@@ -15,6 +15,7 @@ import {
 import { useStore } from '../hooks/useStore';
 import type { Client, ServiceType, Booking } from '../types';
 import { cn, formatCurrency, parseDate } from '../utils/utils';
+import { CurrencyInput } from '../components/CurrencyInput';
 
 interface BookingFormProps {
   store: ReturnType<typeof useStore>;
@@ -426,22 +427,19 @@ export default function BookingForm({ store, setActiveTab, editingBooking, setEd
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Preço Acordado (R$) *</label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input 
-                        type="number" 
-                        placeholder="0,00"
+                      <CurrencyInput 
                         className="w-full pl-10 rounded-xl border-slate-200 focus:ring-blue-900 focus:border-blue-900 font-bold text-blue-900"
-                        value={manualPrice === null ? '' : manualPrice}
-                        onChange={(e) => setManualPrice(parseFloat(e.target.value) || 0)}
+                        value={manualPrice === null ? (selectedService?.defaultPrice || 0) : manualPrice}
+                        onChange={setManualPrice}
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="number" 
-                      placeholder="Desconto manual (R$)"
+                    <CurrencyInput 
+                      placeholder="Desconto manual"
                       className="flex-1 text-xs rounded-lg border-slate-200"
-                      value={discount || ''}
-                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                      value={discount}
+                      onChange={setDiscount}
                     />
                     <input 
                       type="text" 

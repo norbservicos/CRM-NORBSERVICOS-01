@@ -15,6 +15,7 @@ import {
 import { cn } from '../utils/utils';
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { CurrencyInput } from '../components/CurrencyInput';
 
 const PREDEFINED_SERVICES = [
   { label: 'Montagem/Desmontagem', text: 'Montagem desmontagem sofá', icon: '🛠️' },
@@ -32,22 +33,21 @@ interface ServiceItem {
 export default function Budget() {
   const [clientName, setClientName] = useState('');
   const [services, setServices] = useState<ServiceItem[]>([{ id: '1', description: '' }]);
-  const [totalPrice, setTotalPrice] = useState(''); // New global total price
-  const [pixDiscount, setPixDiscount] = useState('0'); // Discount for Pix in R$ or % (now in R$)
+  const [totalPrice, setTotalPrice] = useState<number>(0); // New global total price
+  const [pixDiscount, setPixDiscount] = useState<number>(0); // Discount for Pix in R$ (now in R$)
   const [cardInfo, setCardInfo] = useState(''); // Custom card info
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareFileName, setShareFileName] = useState('');
 
   const budgetRef = useRef<HTMLDivElement>(null);
-  const lastTotalPriceRef = useRef('');
+  const lastTotalPriceRef = useRef<number>(0);
 
   useEffect(() => {
-    const total = parseFloat(totalPrice) || 0;
     if (totalPrice !== lastTotalPriceRef.current) {
       lastTotalPriceRef.current = totalPrice;
-      if (total > 0) {
-        setCardInfo(`R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em até 5x`);
+      if (totalPrice > 0) {
+        setCardInfo(`R$ ${totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em até 5x`);
       } else {
         setCardInfo('');
       }
@@ -81,13 +81,11 @@ export default function Budget() {
   };
 
   const getTotal = () => {
-    return parseFloat(totalPrice) || 0;
+    return totalPrice;
   };
 
   const getPixTotal = () => {
-    const total = getTotal();
-    const discount = parseFloat(pixDiscount) || 0;
-    return Math.max(0, total - discount);
+    return Math.max(0, totalPrice - pixDiscount);
   };
 
   const exportToPdf = async () => {
@@ -265,12 +263,9 @@ export default function Budget() {
               <label className="text-xs font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
                 <DollarSign size={12} /> Valor Total do Orçamento (R$)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Ex: 250,00"
+              <CurrencyInput
                 value={totalPrice}
-                onChange={(e) => setTotalPrice(e.target.value)}
+                onChange={setTotalPrice}
                 className="w-full p-4 bg-slate-900 text-white border-2 border-transparent focus:border-blue-400 rounded-2xl font-bold transition-all"
               />
             </div>
@@ -292,12 +287,9 @@ export default function Budget() {
               <label className="text-xs font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
                 <Zap size={12} /> Desconto para Pix/Dinheiro (R$)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Ex: 20,00"
+              <CurrencyInput
                 value={pixDiscount}
-                onChange={(e) => setPixDiscount(e.target.value)}
+                onChange={setPixDiscount}
                 className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-blue-900/10 rounded-2xl font-bold transition-all"
               />
             </div>
@@ -393,7 +385,7 @@ export default function Budget() {
                       R$ {getPixTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-[9px] font-bold mt-2 uppercase tracking-wide" style={{ color: '#93c5fd' }}>
-                      Com R$ {(parseFloat(pixDiscount) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de desconto
+                      Com R$ {pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de desconto
                     </p>
                   </div>
                 </div>
@@ -459,7 +451,7 @@ export default function Budget() {
                   `Olá! Segue o orçamento de *${clientName.trim()}*:\n\n` +
                   `*Serviços:*\n${services.map(s => `• ${s.description || 'Sem descrição'}`).join('\n')}\n\n` +
                   `*Valor Total:* R$ ${getTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
-                  `*Desconto Pix/Dinheiro:* R$ ${parseFloat(pixDiscount || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
+                  `*Desconto Pix/Dinheiro:* R$ ${pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
                   `*Valor no Pix:* R$ ${getPixTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
                   `*Condições Cartão:* ${cardInfo || `R$ ${getTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}\n\n` +
                   `O PDF oficial foi baixado em seu aparelho. Você pode anexar o arquivo na conversa! \n\nAtenciosamente,\nNORB PRO`
