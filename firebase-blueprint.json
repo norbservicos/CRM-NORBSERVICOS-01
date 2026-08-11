@@ -70,6 +70,25 @@
         "uid": { "type": "string", "description": "Owner of the record" }
       },
       "required": ["id", "description", "amount", "category", "date", "createdAt", "uid"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Potential customer lead",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "selectedCity": { "type": "string" },
+        "selectedFurniture": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["novo", "em_atendimento", "convertido", "perdido"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "source": { "type": "string" },
+        "value": { "type": "number" },
+        "uid": { "type": "string" }
+      },
+      "required": ["id", "fullName", "whatsappNumber", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -88,6 +107,10 @@
     "/expenses/{expenseId}": {
       "schema": "Expense",
       "description": "User expenses"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Customer leads"
     }
   }
 }
