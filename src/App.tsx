@@ -2,6 +2,7 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
+  UserPlus,
   Settings, 
   Calendar, 
   ClipboardList, 
@@ -21,6 +22,7 @@ import { auth } from './firebase';
 import { cn } from './utils/utils';
 import { Logo } from './components/Logo';
 import Dashboard from './pages/Dashboard';
+import Leads from './pages/Leads';
 import Clients from './pages/Clients';
 import Catalog from './pages/Catalog';
 import BookingForm from './pages/BookingForm';
@@ -97,7 +99,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-type Tab = 'dashboard' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses' | 'budget';
+type Tab = 'dashboard' | 'leads' | 'clients' | 'catalog' | 'booking' | 'services' | 'agenda' | 'finance' | 'reports' | 'expenses' | 'budget';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -229,6 +231,7 @@ function MainApp() {
 
   const menuItems: { id: string; label: string; icon: any; onClick?: () => void }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'leads', label: 'Leads', icon: UserPlus },
     { id: 'budget', label: 'Orçamento', icon: FileText },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'services', label: 'Serviços', icon: ClipboardList },
@@ -250,6 +253,7 @@ function MainApp() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard store={store} setActiveTab={setActiveTab} />;
+      case 'leads': return <Leads store={store} onNavigateToBooking={() => setActiveTab('booking')} />;
       case 'clients': return <Clients store={store} />;
       case 'catalog': return <Catalog store={store} />;
       case 'booking': return <BookingForm store={store} setActiveTab={setActiveTab} editingBooking={editingBooking} setEditingBooking={setEditingBooking} />;
