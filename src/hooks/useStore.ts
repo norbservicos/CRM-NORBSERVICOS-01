@@ -73,6 +73,47 @@ const INITIAL_SERVICE_TYPES: Omit<ServiceType, 'uid'>[] = [
   { id: '3', name: 'Desmontagem e montagem de moveis', description: 'Serviço profissional de desmontagem e montagem.', defaultPrice: 0, estimatedTime: '02:00', active: true },
 ];
 
+function parseLeadDoc(docSnap: any): Lead {
+  const data = docSnap.data ? docSnap.data() : docSnap;
+  const id = docSnap.id || data.id;
+
+  // Raw date resolution (string, Timestamp or seconds)
+  const rawDate = data.createdAt || data.CreatdAt || data.CreatedAt || data.created_at || data.date || data.data;
+  let createdAt = new Date().toISOString();
+  if (rawDate) {
+    if (typeof rawDate === 'string') {
+      createdAt = rawDate;
+    } else if (rawDate?.toDate && typeof rawDate.toDate === 'function') {
+      createdAt = rawDate.toDate().toISOString();
+    } else if (rawDate?.seconds) {
+      createdAt = new Date(rawDate.seconds * 1000).toISOString();
+    }
+  }
+
+  const fullName = data.fullName || data.Fullname || data.FullName || data.name || data.Name || data.Nome || data.nome || 'Sem nome';
+  const whatsappNumber = data.whatsappNumber || data['Whatsapp mulher'] || data['whatsapp mulher'] || data.whatsappMulher || data.whatsapp || data.Whatsapp || data.phone || data.Phone || data.telefone || '';
+  const selectedCity = data.selectedCity || data.SelectedCity || data.city || data.City || data.cidade || '';
+  const selectedFurniture = data.selectedFurniture || data.SelectedFurniture || data.furniture || data.Furniture || data.serviceInterest || data.servico || '';
+  const notes = data.notes || data.Notes || data.message || data.observations || data.observacao || '';
+  const rawStatus = data.status || data.Status;
+  const status = (rawStatus ? rawStatus.toString().trim().toLowerCase() : 'novo') as Lead['status'];
+
+  return {
+    ...data,
+    id,
+    fullName,
+    whatsappNumber,
+    selectedCity,
+    selectedFurniture,
+    notes,
+    status: status || 'novo',
+    createdAt,
+    source: data.source || 'Formulário',
+    value: data.value ? Number(data.value) : 0,
+    uid: data.uid || ''
+  };
+}
+
 export function useStore() {
   const canonicalMapRef = useRef<Record<string, string>>({});
   const [user, setUser] = useState<User | null>(null);
@@ -85,6 +126,31 @@ export function useStore() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Separate, immediate listener for Leads collection on Cloud Firestore
+  useEffect(() => {
+    const qLeads = collection(db, 'leads');
+
+    // Immediate initial fetch to ensure leads load without delay
+    getDocs(qLeads).then((snapshot) => {
+      const items = snapshot.docs.map(parseLeadDoc);
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setLeads(items);
+    }).catch((err) => {
+      console.error('Erro na busca inicial de leads do Firestore:', err);
+    });
+
+    // Real-time listener for incoming leads
+    const unsubLeads = onSnapshot(qLeads, (snapshot) => {
+      const items = snapshot.docs.map(parseLeadDoc);
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setLeads(items);
+    }, (err) => {
+      console.error('Erro na escuta em tempo real da colecao leads:', err);
+    });
+
+    return () => unsubLeads();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -234,53 +300,6 @@ export function useStore() {
       setLoading(false);
     }, (error) => handleError(error, OperationType.LIST, 'expenses'));
 
-    // Real-time listener for Leads collection
-    const qLeads = collection(db, 'leads');
-    const unsubLeads = onSnapshot(qLeads, (snapshot) => {
-      const items = snapshot.docs.map(doc => {
-        const data = doc.data();
-
-        // Extract CreatedAt / CreatdAt safely (string, Timestamp or seconds)
-        const rawDate = data.createdAt || data.CreatdAt || data.CreatedAt || data.created_at;
-        let createdAt = new Date().toISOString();
-        if (rawDate) {
-          if (typeof rawDate === 'string') {
-            createdAt = rawDate;
-          } else if (rawDate?.toDate && typeof rawDate.toDate === 'function') {
-            createdAt = rawDate.toDate().toISOString();
-          } else if (rawDate?.seconds) {
-            createdAt = new Date(rawDate.seconds * 1000).toISOString();
-          }
-        }
-
-        const fullName = data.fullName || data.Fullname || data.FullName || data.name || data.Nome || 'Sem nome';
-        const whatsappNumber = data.whatsappNumber || data['Whatsapp mulher'] || data['whatsapp mulher'] || data.whatsappMulher || data.whatsapp || data.phone || '';
-        const selectedCity = data.selectedCity || data.SelectedCity || data.city || '';
-        const selectedFurniture = data.selectedFurniture || data.SelectedFurniture || data.furniture || data.serviceInterest || '';
-        const notes = data.notes || data.Notes || data.message || data.observations || '';
-        const rawStatus = data.status || data.Status;
-        const status = rawStatus ? rawStatus.toString().toLowerCase() : 'novo';
-
-        return {
-          ...data,
-          id: doc.id,
-          fullName,
-          whatsappNumber,
-          selectedCity,
-          selectedFurniture,
-          notes,
-          status,
-          createdAt,
-          source: data.source || 'Formulário',
-          value: data.value ? Number(data.value) : 0,
-          uid: data.uid || user?.uid || ''
-        } as Lead;
-      });
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setLeads(items);
-      setLoading(false);
-    }, (error) => handleError(error, OperationType.LIST, 'leads'));
-
     // Fallback loading state if snapshots are slow but empty
     const timeout = setTimeout(() => {
       setLoading(false);
@@ -291,7 +310,6 @@ export function useStore() {
       unsubServiceTypes();
       unsubBookings();
       unsubExpenses();
-      unsubLeads();
       clearTimeout(timeout);
     };
   }, [isAuthReady, user, isUnauthorized]);
