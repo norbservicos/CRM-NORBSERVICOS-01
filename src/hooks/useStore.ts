@@ -240,8 +240,8 @@ export function useStore() {
       const items = snapshot.docs.map(doc => {
         const data = doc.data();
 
-        // Extract CreatedAt / CreatdAt safely
-        const rawDate = data.CreatdAt || data.CreatedAt || data.createdAt || data.created_at;
+        // Extract CreatedAt / CreatdAt safely (string, Timestamp or seconds)
+        const rawDate = data.createdAt || data.CreatdAt || data.CreatedAt || data.created_at;
         let createdAt = new Date().toISOString();
         if (rawDate) {
           if (typeof rawDate === 'string') {
@@ -253,14 +253,16 @@ export function useStore() {
           }
         }
 
-        const fullName = data.Fullname || data.fullName || data.FullName || data.name || data.Nome || 'Sem nome';
-        const whatsappNumber = data['Whatsapp mulher'] || data['whatsapp mulher'] || data.whatsappMulher || data.whatsappNumber || data.whatsapp || data.phone || '';
-        const selectedCity = data.SelectedCity || data.selectedCity || data.city || '';
+        const fullName = data.fullName || data.Fullname || data.FullName || data.name || data.Nome || 'Sem nome';
+        const whatsappNumber = data.whatsappNumber || data['Whatsapp mulher'] || data['whatsapp mulher'] || data.whatsappMulher || data.whatsapp || data.phone || '';
+        const selectedCity = data.selectedCity || data.SelectedCity || data.city || '';
         const selectedFurniture = data.selectedFurniture || data.SelectedFurniture || data.furniture || data.serviceInterest || '';
-        const notes = data.Notes || data.notes || data.message || data.observations || '';
-        const status = (data.Status || data.status || 'novo').toString().toLowerCase();
+        const notes = data.notes || data.Notes || data.message || data.observations || '';
+        const rawStatus = data.status || data.Status;
+        const status = rawStatus ? rawStatus.toString().toLowerCase() : 'novo';
 
         return {
+          ...data,
           id: doc.id,
           fullName,
           whatsappNumber,

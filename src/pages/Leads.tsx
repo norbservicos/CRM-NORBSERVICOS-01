@@ -152,23 +152,28 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
 
   // Filter Leads
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = 
-      (lead.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
-      (lead.whatsappNumber || '').includes(search) ||
-      (lead.selectedCity || '').toLowerCase().includes(search.toLowerCase()) ||
-      (lead.selectedFurniture || '').toLowerCase().includes(search.toLowerCase()) ||
-      (lead.notes || '').toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase().trim();
+    const searchDigits = search.replace(/\D/g, '');
 
-    const matchesStatus = statusFilter === 'todos' || lead.status === statusFilter;
+    const matchesSearch = !searchLower ||
+      (lead.fullName || '').toLowerCase().includes(searchLower) ||
+      (lead.selectedCity || '').toLowerCase().includes(searchLower) ||
+      (lead.selectedFurniture || '').toLowerCase().includes(searchLower) ||
+      (lead.notes || '').toLowerCase().includes(searchLower) ||
+      (lead.whatsappNumber || '').toLowerCase().includes(searchLower) ||
+      (searchDigits.length > 0 && (lead.whatsappNumber || '').replace(/\D/g, '').includes(searchDigits));
+
+    const currentStatus = (lead.status || 'novo').toLowerCase();
+    const matchesStatus = statusFilter === 'todos' || currentStatus === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   // Metrics
   const totalLeads = leads.length;
-  const newLeadsCount = leads.filter(l => l.status === 'novo').length;
-  const inProgressCount = leads.filter(l => l.status === 'em_atendimento').length;
-  const convertedCount = leads.filter(l => l.status === 'convertido').length;
+  const newLeadsCount = leads.filter(l => (l.status || 'novo').toLowerCase() === 'novo').length;
+  const inProgressCount = leads.filter(l => (l.status || '').toLowerCase() === 'em_atendimento').length;
+  const convertedCount = leads.filter(l => (l.status || '').toLowerCase() === 'convertido').length;
 
   return (
     <div className="space-y-6 pb-12">
