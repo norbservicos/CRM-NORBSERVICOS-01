@@ -55,6 +55,22 @@ export interface Expense {
   uid: string;
 }
 
+export type LeadStatus = 'novo' | 'em_atendimento' | 'convertido' | 'perdido' | string;
+
+export interface Lead {
+  id: string;
+  fullName: string;
+  whatsappNumber: string;
+  selectedCity: string;
+  selectedFurniture: string;
+  notes: string;
+  status: LeadStatus;
+  createdAt: string;
+  source?: string;
+  value?: number;
+  uid?: string;
+}
+
 export interface DashboardStats {
   totalMonth: number;
   scheduled: number;

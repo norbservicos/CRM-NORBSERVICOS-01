@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import type { Client, ServiceType, Booking, Expense } from '../types';
+import type { Client, ServiceType, Booking, Expense, Lead } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -82,6 +82,7 @@ export function useStore() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -233,6 +234,38 @@ export function useStore() {
       setLoading(false);
     }, (error) => handleError(error, OperationType.LIST, 'expenses'));
 
+    // Real-time listener for Leads collection
+    const qLeads = collection(db, 'leads');
+    const unsubLeads = onSnapshot(qLeads, (snapshot) => {
+      const items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const fullName = data.fullName || data.FullName || data.name || 'Sem nome';
+        const whatsappNumber = data.whatsappNumber || data.whatsapp || data.phone || '';
+        const selectedCity = data.selectedCity || data.city || '';
+        const selectedFurniture = data.selectedFurniture || data.furniture || data.serviceInterest || '';
+        const notes = data.notes || data.message || data.observations || '';
+        const status = data.status || 'novo';
+        const createdAt = data.createdAt || new Date().toISOString();
+
+        return {
+          id: doc.id,
+          fullName,
+          whatsappNumber,
+          selectedCity,
+          selectedFurniture,
+          notes,
+          status,
+          createdAt,
+          source: data.source || 'Formulário',
+          value: data.value ? Number(data.value) : 0,
+          uid: data.uid || user?.uid || ''
+        } as Lead;
+      });
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setLeads(items);
+      setLoading(false);
+    }, (error) => handleError(error, OperationType.LIST, 'leads'));
+
     // Fallback loading state if snapshots are slow but empty
     const timeout = setTimeout(() => {
       setLoading(false);
@@ -243,6 +276,7 @@ export function useStore() {
       unsubServiceTypes();
       unsubBookings();
       unsubExpenses();
+      unsubLeads();
       clearTimeout(timeout);
     };
   }, [isAuthReady, user, isUnauthorized]);
@@ -401,6 +435,63 @@ export function useStore() {
     }
   };
 
+  const addLead = async (lead: Omit<Lead, 'id' | 'createdAt'>) => {
+    const id = uuidv4();
+    const newLead = {
+      ...lead,
+      id,
+      createdAt: new Date().toISOString(),
+      uid: user?.uid || ''
+    };
+    try {
+      await setDoc(doc(db, 'leads', id), newLead);
+      return newLead;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `leads/${id}`);
+    }
+  };
+
+  const updateLead = async (id: string, lead: Partial<Lead>) => {
+    try {
+      await updateDoc(doc(db, 'leads', id), lead);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `leads/${id}`);
+    }
+  };
+
+  const deleteLead = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'leads', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `leads/${id}`);
+    }
+  };
+
+  const convertLeadToClient = async (lead: Lead) => {
+    if (!user) return;
+    
+    let existing = clients.find(c => 
+      c.name.toLowerCase().trim() === lead.fullName.toLowerCase().trim() ||
+      (lead.whatsappNumber && c.phone.replace(/\D/g, '') === lead.whatsappNumber.replace(/\D/g, ''))
+    );
+
+    let clientToReturn = existing;
+
+    if (!existing) {
+      clientToReturn = await addClient({
+        name: lead.fullName,
+        phone: lead.whatsappNumber || '',
+        address: '',
+        city: lead.selectedCity || 'Indefinido',
+        gender: 'masculino',
+        observations: `Lead vindo de: ${lead.source || 'Formulário'}.${lead.notes ? ` Notas: ${lead.notes}` : ''}`
+      });
+    }
+
+    await updateLead(lead.id, { status: 'convertido' });
+    return clientToReturn;
+  };
+
   const resetUnauthorized = () => setIsUnauthorized(false);
 
   return {
@@ -414,6 +505,7 @@ export function useStore() {
     serviceTypes,
     bookings,
     expenses,
+    leads,
     addClient,
     updateClient,
     deleteClient,
@@ -426,5 +518,9 @@ export function useStore() {
     addExpense,
     updateExpense,
     deleteExpense,
+    addLead,
+    updateLead,
+    deleteLead,
+    convertLeadToClient
   };
 }
