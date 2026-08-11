@@ -176,21 +176,21 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   const convertedCount = leads.filter(l => (l.status || '').toLowerCase() === 'convertido').length;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 sm:space-y-6 pb-28 sm:pb-12 max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-7 h-7 text-blue-900" />
-            <h1 className="text-2xl font-bold text-slate-900">Gerenciador de Leads</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <UserPlus className="w-6 h-6 sm:w-7 sm:h-7 text-blue-900 shrink-0" />
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">Gerenciador de Leads</h1>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 break-words">
             Receba solicitações de clientes em tempo real direto da sua Landing Page ou adicione manualmente.
           </p>
         </div>
         <button
           onClick={handleOpenAddModal}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white font-medium rounded-xl transition-all shadow-sm"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-blue-900 hover:bg-slate-900 active:bg-slate-950 text-white font-medium rounded-xl transition-all shadow-sm text-sm shrink-0 min-h-[44px]"
         >
           <Plus className="w-5 h-5" />
           <span>Novo Lead</span>
@@ -198,40 +198,40 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total de Leads</p>
-          <p className="text-2xl font-bold text-slate-900 mt-2">{totalLeads}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Total de Leads</p>
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 sm:mt-2">{totalLeads}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30 shadow-sm">
-          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Novos Leads</p>
-          <p className="text-2xl font-bold text-emerald-700 mt-2">{newLeadsCount}</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30 shadow-sm">
+          <p className="text-[10px] sm:text-xs font-semibold text-emerald-700 uppercase tracking-wider">Novos Leads</p>
+          <p className="text-xl sm:text-2xl font-bold text-emerald-700 mt-1 sm:mt-2">{newLeadsCount}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-sm">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Em Atendimento</p>
-          <p className="text-2xl font-bold text-amber-700 mt-2">{inProgressCount}</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-sm">
+          <p className="text-[10px] sm:text-xs font-semibold text-amber-700 uppercase tracking-wider">Em Atendimento</p>
+          <p className="text-xl sm:text-2xl font-bold text-amber-700 mt-1 sm:mt-2">{inProgressCount}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-blue-200 bg-blue-50/30 shadow-sm">
-          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Convertidos</p>
-          <p className="text-2xl font-bold text-blue-700 mt-2">{convertedCount}</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-blue-200 bg-blue-50/30 shadow-sm">
+          <p className="text-[10px] sm:text-xs font-semibold text-blue-700 uppercase tracking-wider">Convertidos</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-700 mt-1 sm:mt-2">{convertedCount}</p>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
-        <div className="relative flex-1">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 md:space-y-0 md:flex md:items-center md:justify-between gap-4 max-w-full overflow-hidden">
+        <div className="relative flex-1 min-w-0 w-full">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 shrink-0" />
           <input
             type="text"
             placeholder="Buscar por nome, cidade, móvel, telefone ou nota..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition-all text-ellipsis"
           />
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 max-w-full shrink-0">
           {[
             { id: 'todos', label: 'Todos' },
             { id: 'novo', label: 'Novos' },
@@ -242,10 +242,10 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all min-h-[36px] flex items-center justify-center shrink-0 ${
                 statusFilter === tab.id
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-blue-900 text-white shadow-sm font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 bg-slate-50 sm:bg-transparent'
               }`}
             >
               {tab.label}
@@ -256,19 +256,19 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
 
       {/* Leads Grid */}
       {filteredLeads.length === 0 ? (
-        <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <div className="bg-white p-8 sm:p-12 text-center rounded-2xl border border-slate-200 shadow-sm space-y-3">
           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
             <Users className="w-6 h-6" />
           </div>
           <h3 className="text-base font-semibold text-slate-800">Nenhum lead encontrado</h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto break-words">
             {search || statusFilter !== 'todos'
               ? 'Tente ajustar os filtros ou os termos de busca.'
               : 'As solicitações enviadas pelo formulário da sua Landing Page aparecerão automaticamente aqui.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {filteredLeads.map(lead => {
             const cleanPhone = (lead.whatsappNumber || '').replace(/\D/g, '');
             const whatsappUrl = cleanPhone ? `https://wa.me/55${cleanPhone}?text=Olá%20${encodeURIComponent(lead.fullName || '')},%20recebemos%20sua%20solicitação%20no%20nosso%20site!` : '#';
@@ -276,80 +276,80 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
             return (
               <div 
                 key={lead.id} 
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden min-w-0"
               >
                 {/* Card Header */}
-                <div className="p-5 space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 leading-snug">
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4 min-w-0">
+                  <div className="flex items-start justify-between gap-2.5 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug break-words [overflow-wrap:anywhere]">
                         {lead.fullName || 'Sem Nome'}
                       </h3>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{formatDateTime(lead.createdAt)}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 mt-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{formatDateTime(lead.createdAt)}</span>
                       </div>
                     </div>
-                    {getStatusBadge(lead.status)}
+                    <div className="shrink-0">{getStatusBadge(lead.status)}</div>
                   </div>
 
                   {/* Consumed Information Details */}
-                  <div className="space-y-2.5 pt-2 border-t border-slate-100 text-sm">
+                  <div className="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm min-w-0">
                     {/* WhatsApp */}
-                    <div className="flex items-center justify-between text-slate-700">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="font-medium text-xs text-slate-500 uppercase">WhatsApp:</span>
+                    <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
+                      <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium text-[10px] sm:text-xs text-slate-500 uppercase">WhatsApp:</span>
                       </div>
-                      <span className="font-semibold font-mono text-slate-900">
+                      <span className="font-semibold font-mono text-slate-900 break-all text-right">
                         {lead.whatsappNumber ? formatPhoneNumber(lead.whatsappNumber) : 'Não informado'}
                       </span>
                     </div>
 
                     {/* Cidade */}
-                    <div className="flex items-center justify-between text-slate-700">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="font-medium text-xs text-slate-500 uppercase">Cidade:</span>
+                    <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
+                      <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium text-[10px] sm:text-xs text-slate-500 uppercase">Cidade:</span>
                       </div>
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-slate-900 truncate text-right">
                         {lead.selectedCity || 'Não informada'}
                       </span>
                     </div>
 
                     {/* Móvel/Estofado */}
-                    <div className="flex items-center justify-between text-slate-700">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Armchair className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span className="font-medium text-xs text-slate-500 uppercase">Móvel/Estofado:</span>
+                    <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
+                      <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+                        <Armchair className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium text-[10px] sm:text-xs text-slate-500 uppercase">Móvel/Estofado:</span>
                       </div>
-                      <span className="font-semibold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-xs">
+                      <span className="font-semibold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-[11px] sm:text-xs truncate max-w-[60%] text-right">
                         {lead.selectedFurniture || 'Não informado'}
                       </span>
                     </div>
 
                     {/* Observações / Notes */}
                     {lead.notes && (
-                      <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-1">
+                      <div className="mt-2.5 p-2.5 sm:p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-1 min-w-0">
                         <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <FileText className="w-3.5 h-3.5 text-slate-400" />
+                          <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>Notas / Mensagem:</span>
                         </div>
-                        <p className="whitespace-pre-wrap leading-relaxed">{lead.notes}</p>
+                        <p className="whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere] max-h-28 overflow-y-auto">{lead.notes}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Card Footer Actions */}
-                <div className="p-4 bg-slate-50 border-t border-slate-100 space-y-2">
+                <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-100 space-y-2.5">
                   {/* Status Selector */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-500">Mudar Status:</span>
+                    <span className="text-xs font-semibold text-slate-500 shrink-0">Mudar Status:</span>
                     <select
                       value={lead.status}
                       onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
-                      className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                      className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-900 min-h-[38px] sm:min-h-0 cursor-pointer"
                     >
                       <option value="novo">Novo</option>
                       <option value="em_atendimento">Em Atendimento</option>
@@ -359,29 +359,29 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   </div>
 
                   {/* Primary Buttons */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
                     {cleanPhone ? (
                       <a
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all shadow-sm"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-semibold transition-all shadow-sm min-h-[42px]"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
+                        <MessageSquare className="w-4 h-4 shrink-0" />
                         <span>WhatsApp</span>
                       </a>
                     ) : (
-                      <button disabled className="px-3 py-2 bg-slate-200 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed">
+                      <button disabled className="px-3 py-2.5 bg-slate-200 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed min-h-[42px]">
                         Sem WhatsApp
                       </button>
                     )}
 
                     <button
                       onClick={() => handleConvert(lead)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-900 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition-all shadow-sm"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-900 hover:bg-slate-900 active:bg-slate-950 text-white rounded-xl text-xs font-semibold transition-all shadow-sm min-h-[42px]"
                       title="Converter em Cliente e Criar Agendamento"
                     >
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4 shrink-0" />
                       <span>Agendar</span>
                     </button>
                   </div>
@@ -390,14 +390,14 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60 text-slate-400">
                     <button
                       onClick={() => handleOpenEditModal(lead)}
-                      className="p-1.5 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 sm:p-1.5 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                       title="Editar Lead"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(lead.id)}
-                      className="p-1.5 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 sm:p-1.5 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                       title="Excluir Lead"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -412,10 +412,10 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
 
       {/* Add / Edit Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-bold text-slate-900">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
                 {editingLead ? 'Editar Lead' : 'Adicionar Novo Lead'}
               </h2>
               <button
@@ -426,7 +426,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Nome Completo *
@@ -455,7 +455,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Cidade
@@ -512,17 +512,17 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 sm:pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 font-medium rounded-xl transition-all text-sm"
+                  className="px-4 sm:px-5 py-2.5 text-slate-600 hover:bg-slate-100 font-medium rounded-xl transition-all text-xs sm:text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white font-medium rounded-xl transition-all text-sm shadow-sm"
+                  className="px-4 sm:px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white font-medium rounded-xl transition-all text-xs sm:text-sm shadow-sm"
                 >
                   {editingLead ? 'Salvar Alterações' : 'Criar Lead'}
                 </button>
