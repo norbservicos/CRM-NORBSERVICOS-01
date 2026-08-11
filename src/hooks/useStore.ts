@@ -239,13 +239,26 @@ export function useStore() {
     const unsubLeads = onSnapshot(qLeads, (snapshot) => {
       const items = snapshot.docs.map(doc => {
         const data = doc.data();
-        const fullName = data.fullName || data.FullName || data.name || 'Sem nome';
-        const whatsappNumber = data.whatsappNumber || data.whatsapp || data.phone || '';
-        const selectedCity = data.selectedCity || data.city || '';
-        const selectedFurniture = data.selectedFurniture || data.furniture || data.serviceInterest || '';
-        const notes = data.notes || data.message || data.observations || '';
-        const status = data.status || 'novo';
-        const createdAt = data.createdAt || new Date().toISOString();
+
+        // Extract CreatedAt / CreatdAt safely
+        const rawDate = data.CreatdAt || data.CreatedAt || data.createdAt || data.created_at;
+        let createdAt = new Date().toISOString();
+        if (rawDate) {
+          if (typeof rawDate === 'string') {
+            createdAt = rawDate;
+          } else if (rawDate?.toDate && typeof rawDate.toDate === 'function') {
+            createdAt = rawDate.toDate().toISOString();
+          } else if (rawDate?.seconds) {
+            createdAt = new Date(rawDate.seconds * 1000).toISOString();
+          }
+        }
+
+        const fullName = data.Fullname || data.fullName || data.FullName || data.name || data.Nome || 'Sem nome';
+        const whatsappNumber = data['Whatsapp mulher'] || data['whatsapp mulher'] || data.whatsappMulher || data.whatsappNumber || data.whatsapp || data.phone || '';
+        const selectedCity = data.SelectedCity || data.selectedCity || data.city || '';
+        const selectedFurniture = data.selectedFurniture || data.SelectedFurniture || data.furniture || data.serviceInterest || '';
+        const notes = data.Notes || data.notes || data.message || data.observations || '';
+        const status = (data.Status || data.status || 'novo').toString().toLowerCase();
 
         return {
           id: doc.id,
@@ -437,10 +450,18 @@ export function useStore() {
 
   const addLead = async (lead: Omit<Lead, 'id' | 'createdAt'>) => {
     const id = uuidv4();
+    const nowIso = new Date().toISOString();
     const newLead = {
       ...lead,
       id,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
+      CreatdAt: nowIso,
+      Fullname: lead.fullName,
+      Notes: lead.notes,
+      SelectedCity: lead.selectedCity,
+      selectedFurniture: lead.selectedFurniture,
+      Status: lead.status,
+      'Whatsapp mulher': lead.whatsappNumber,
       uid: user?.uid || ''
     };
     try {
@@ -453,7 +474,33 @@ export function useStore() {
 
   const updateLead = async (id: string, lead: Partial<Lead>) => {
     try {
-      await updateDoc(doc(db, 'leads', id), lead);
+      const updates: any = { ...lead };
+      if (lead.fullName !== undefined) {
+        updates.Fullname = lead.fullName;
+        updates.fullName = lead.fullName;
+      }
+      if (lead.notes !== undefined) {
+        updates.Notes = lead.notes;
+        updates.notes = lead.notes;
+      }
+      if (lead.selectedCity !== undefined) {
+        updates.SelectedCity = lead.selectedCity;
+        updates.selectedCity = lead.selectedCity;
+      }
+      if (lead.selectedFurniture !== undefined) {
+        updates.selectedFurniture = lead.selectedFurniture;
+        updates.SelectedFurniture = lead.selectedFurniture;
+      }
+      if (lead.status !== undefined) {
+        updates.Status = lead.status;
+        updates.status = lead.status;
+      }
+      if (lead.whatsappNumber !== undefined) {
+        updates['Whatsapp mulher'] = lead.whatsappNumber;
+        updates.whatsappNumber = lead.whatsappNumber;
+      }
+
+      await updateDoc(doc(db, 'leads', id), updates);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `leads/${id}`);
     }
