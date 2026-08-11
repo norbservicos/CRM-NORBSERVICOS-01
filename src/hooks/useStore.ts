@@ -12,7 +12,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { db, auth } from '../firebase';
+import { db, auth, allDatabases } from '../firebase';
 import type { Client, ServiceType, Booking, Expense, Lead } from '../types';
 
 export enum OperationType {
@@ -127,29 +127,55 @@ export function useStore() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Separate, immediate listener for Leads collection on Cloud Firestore
+  // Separate, immediate listener for Leads collection across all database instances
   useEffect(() => {
-    const qLeads = collection(db, 'leads');
-
-    // Immediate initial fetch to ensure leads load without delay
-    getDocs(qLeads).then((snapshot) => {
-      const items = snapshot.docs.map(parseLeadDoc);
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setLeads(items);
-    }).catch((err) => {
-      console.error('Erro na busca inicial de leads do Firestore:', err);
+    const leadsMapByDb: Record<number, Map<string, Lead>> = {};
+    allDatabases.forEach((_, idx) => {
+      leadsMapByDb[idx] = new Map();
     });
 
-    // Real-time listener for incoming leads
-    const unsubLeads = onSnapshot(qLeads, (snapshot) => {
-      const items = snapshot.docs.map(parseLeadDoc);
+    const updateCombinedLeads = () => {
+      const mergedMap = new Map<string, Lead>();
+      allDatabases.forEach((_, idx) => {
+        leadsMapByDb[idx]?.forEach((lead, id) => {
+          mergedMap.set(id, lead);
+        });
+      });
+      const items = Array.from(mergedMap.values());
       items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setLeads(items);
-    }, (err) => {
-      console.error('Erro na escuta em tempo real da colecao leads:', err);
+    };
+
+    const unsubs = allDatabases.map((targetDb, dbIdx) => {
+      const qLeads = collection(targetDb, 'leads');
+
+      getDocs(qLeads).then((snapshot) => {
+        snapshot.docs.forEach((docSnap) => {
+          const lead = parseLeadDoc(docSnap);
+          (lead as any)._dbIndex = dbIdx;
+          leadsMapByDb[dbIdx].set(lead.id, lead);
+        });
+        updateCombinedLeads();
+      }).catch((err) => {
+        console.warn(`Erro na busca inicial do banco ${dbIdx}:`, err);
+      });
+
+      return onSnapshot(qLeads, (snapshot) => {
+        leadsMapByDb[dbIdx].clear();
+        snapshot.docs.forEach((docSnap) => {
+          const lead = parseLeadDoc(docSnap);
+          (lead as any)._dbIndex = dbIdx;
+          leadsMapByDb[dbIdx].set(lead.id, lead);
+        });
+        updateCombinedLeads();
+      }, (err) => {
+        console.warn(`Erro na escuta em tempo real do banco ${dbIdx}:`, err);
+      });
     });
 
-    return () => unsubLeads();
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
   }, []);
 
   useEffect(() => {
@@ -484,53 +510,71 @@ export function useStore() {
       'Whatsapp mulher': lead.whatsappNumber,
       uid: user?.uid || ''
     };
-    try {
-      await setDoc(doc(db, 'leads', id), newLead);
-      return newLead;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `leads/${id}`);
+    for (const targetDb of allDatabases) {
+      try {
+        await setDoc(doc(targetDb, 'leads', id), newLead);
+      } catch (error) {
+        console.warn('Erro ao salvar lead no banco:', error);
+      }
     }
+    return newLead;
   };
 
   const updateLead = async (id: string, lead: Partial<Lead>) => {
-    try {
-      const updates: any = { ...lead };
-      if (lead.fullName !== undefined) {
-        updates.Fullname = lead.fullName;
-        updates.fullName = lead.fullName;
-      }
-      if (lead.notes !== undefined) {
-        updates.Notes = lead.notes;
-        updates.notes = lead.notes;
-      }
-      if (lead.selectedCity !== undefined) {
-        updates.SelectedCity = lead.selectedCity;
-        updates.selectedCity = lead.selectedCity;
-      }
-      if (lead.selectedFurniture !== undefined) {
-        updates.selectedFurniture = lead.selectedFurniture;
-        updates.SelectedFurniture = lead.selectedFurniture;
-      }
-      if (lead.status !== undefined) {
-        updates.Status = lead.status;
-        updates.status = lead.status;
-      }
-      if (lead.whatsappNumber !== undefined) {
-        updates['Whatsapp mulher'] = lead.whatsappNumber;
-        updates.whatsappNumber = lead.whatsappNumber;
-      }
+    const targetLead = leads.find(l => l.id === id);
+    const dbIndex = (targetLead as any)?._dbIndex;
+    const targetDbs = dbIndex !== undefined && allDatabases[dbIndex]
+      ? [allDatabases[dbIndex]]
+      : allDatabases;
 
-      await updateDoc(doc(db, 'leads', id), updates);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `leads/${id}`);
+    const updates: any = { ...lead };
+    if (lead.fullName !== undefined) {
+      updates.Fullname = lead.fullName;
+      updates.fullName = lead.fullName;
+    }
+    if (lead.notes !== undefined) {
+      updates.Notes = lead.notes;
+      updates.notes = lead.notes;
+    }
+    if (lead.selectedCity !== undefined) {
+      updates.SelectedCity = lead.selectedCity;
+      updates.selectedCity = lead.selectedCity;
+    }
+    if (lead.selectedFurniture !== undefined) {
+      updates.selectedFurniture = lead.selectedFurniture;
+      updates.SelectedFurniture = lead.selectedFurniture;
+    }
+    if (lead.status !== undefined) {
+      updates.Status = lead.status;
+      updates.status = lead.status;
+    }
+    if (lead.whatsappNumber !== undefined) {
+      updates['Whatsapp mulher'] = lead.whatsappNumber;
+      updates.whatsappNumber = lead.whatsappNumber;
+    }
+
+    for (const targetDb of targetDbs) {
+      try {
+        await updateDoc(doc(targetDb, 'leads', id), updates);
+      } catch (error) {
+        console.warn(`Erro ao atualizar lead ${id} no banco:`, error);
+      }
     }
   };
 
   const deleteLead = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'leads', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `leads/${id}`);
+    const targetLead = leads.find(l => l.id === id);
+    const dbIndex = (targetLead as any)?._dbIndex;
+    const targetDbs = dbIndex !== undefined && allDatabases[dbIndex]
+      ? [allDatabases[dbIndex]]
+      : allDatabases;
+
+    for (const targetDb of targetDbs) {
+      try {
+        await deleteDoc(doc(targetDb, 'leads', id));
+      } catch (error) {
+        console.warn(`Erro ao remover lead ${id} do banco:`, error);
+      }
     }
   };
 
