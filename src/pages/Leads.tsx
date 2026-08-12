@@ -16,7 +16,9 @@ import {
   Calendar, 
   ArrowRight,
   Filter,
-  Users
+  Users,
+  DollarSign,
+  Check
 } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
 
@@ -38,6 +40,13 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+
+  // Convert Sale Confirmation State
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+  const [saleValue, setSaleValue] = useState<string>('');
+  const [shouldNavigateAfterConvert, setShouldNavigateAfterConvert] = useState<boolean>(false);
+  const [isSubmittingSale, setIsSubmittingSale] = useState<boolean>(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -93,6 +102,16 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   };
 
   const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    if (newStatus === 'convertido') {
+      const lead = leads.find(l => l.id === leadId);
+      if (lead) {
+        setConvertingLead(lead);
+        setSaleValue(lead.value && lead.value > 0 ? String(lead.value) : '');
+        setShouldNavigateAfterConvert(false);
+        setIsConvertModalOpen(true);
+        return;
+      }
+    }
     await updateLead(leadId, { status: newStatus });
   };
 
@@ -103,9 +122,40 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   };
 
   const handleConvert = async (lead: Lead) => {
-    await convertLeadToClient(lead);
-    if (onNavigateToBooking) {
-      onNavigateToBooking();
+    setConvertingLead(lead);
+    setSaleValue(lead.value && lead.value > 0 ? String(lead.value) : '');
+    setShouldNavigateAfterConvert(true);
+    setIsConvertModalOpen(true);
+  };
+
+  const handleConfirmSaleValue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!convertingLead) return;
+
+    setIsSubmittingSale(true);
+    try {
+      const numericValue = parseFloat(saleValue.replace(',', '.')) || 0;
+
+      // Update lead in Firestore with converted status and sale value
+      await updateLead(convertingLead.id, {
+        status: 'convertido',
+        value: numericValue
+      });
+
+      if (shouldNavigateAfterConvert) {
+        await convertLeadToClient(convertingLead);
+        if (onNavigateToBooking) {
+          onNavigateToBooking();
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao salvar valor da venda:', err);
+    } finally {
+      setIsSubmittingSale(false);
+      setIsConvertModalOpen(false);
+      setConvertingLead(null);
+      setSaleValue('');
+      setShouldNavigateAfterConvert(false);
     }
   };
 
@@ -328,6 +378,21 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                       </span>
                     </div>
 
+                    {/* Valor da Venda */}
+                    {(lead.value > 0 || (lead.status || '').toLowerCase() === 'convertido') && (
+                      <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
+                        <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+                          <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-medium text-[10px] sm:text-xs text-slate-500 uppercase">Valor Venda:</span>
+                        </div>
+                        <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 text-[11px] sm:text-xs text-right">
+                          {lead.value && lead.value > 0 
+                            ? `R$ ${Number(lead.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : 'Não informado'}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Observações / Notes */}
                     {lead.notes && (
                       <div className="mt-2.5 p-2.5 sm:p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-1 min-w-0">
@@ -525,6 +590,90 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   className="px-4 sm:px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white font-medium rounded-xl transition-all text-xs sm:text-sm shadow-sm"
                 >
                   {editingLead ? 'Salvar Alterações' : 'Criar Lead'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Sale Value Modal */}
+      {isConvertModalOpen && convertingLead && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Confirmar Valor da Venda</h2>
+                  <p className="text-xs text-slate-500">Qual foi o valor fechado para este lead?</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsConvertModalOpen(false);
+                  setConvertingLead(null);
+                }}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Lead Summary */}
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs space-y-1">
+              <p className="font-bold text-slate-900 text-sm">{convertingLead.fullName}</p>
+              <p className="text-slate-600">
+                {[convertingLead.selectedCity, convertingLead.selectedFurniture].filter(Boolean).join(' • ') || 'Solicitação de Orçamento'}
+              </p>
+            </div>
+
+            {/* Sale Value Form */}
+            <form onSubmit={handleConfirmSaleValue} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Valor da Venda (R$) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    autoFocus
+                    value={saleValue}
+                    onChange={(e) => setSaleValue(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsConvertModalOpen(false);
+                    setConvertingLead(null);
+                  }}
+                  className="px-4 py-2.5 text-slate-600 hover:bg-slate-100 font-medium rounded-xl transition-all text-xs sm:text-sm min-h-[44px]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSale}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl transition-all text-xs sm:text-sm shadow-md min-h-[44px]"
+                >
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{isSubmittingSale ? 'Salvando...' : 'Concluir'}</span>
                 </button>
               </div>
             </form>

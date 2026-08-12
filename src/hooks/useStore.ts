@@ -109,7 +109,7 @@ function parseLeadDoc(docSnap: any): Lead {
     status: status || 'novo',
     createdAt,
     source: data.source || 'Formulário',
-    value: data.value ? Number(data.value) : 0,
+    value: data.value ? Number(data.value) : (data.Value ? Number(data.Value) : (data.valor ? Number(data.valor) : 0)),
     uid: data.uid || ''
   };
 }
@@ -551,6 +551,11 @@ export function useStore() {
     if (lead.whatsappNumber !== undefined) {
       updates['Whatsapp mulher'] = lead.whatsappNumber;
       updates.whatsappNumber = lead.whatsappNumber;
+    }
+    if (lead.value !== undefined) {
+      updates.value = Number(lead.value) || 0;
+      updates.Value = Number(lead.value) || 0;
+      updates.valor = Number(lead.value) || 0;
     }
 
     for (const targetDb of targetDbs) {
