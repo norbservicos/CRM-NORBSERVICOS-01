@@ -55,7 +55,7 @@ export interface Expense {
   uid: string;
 }
 
-export type LeadStatus = 'novo' | 'em_atendimento' | 'convertido' | 'perdido' | string;
+export type LeadStatus = 'novo' | 'em_atendimento' | 'fechado' | 'perdido' | string;
 
 export interface Lead {
   id: string;

@@ -602,7 +602,7 @@ export function useStore() {
       });
     }
 
-    await updateLead(lead.id, { status: 'convertido' });
+    await updateLead(lead.id, { status: 'fechado' });
     return clientToReturn;
   };
 

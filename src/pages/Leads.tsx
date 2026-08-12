@@ -102,7 +102,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   };
 
   const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    if (newStatus === 'convertido') {
+    if (newStatus === 'fechado' || newStatus === 'convertido') {
       const lead = leads.find(l => l.id === leadId);
       if (lead) {
         setConvertingLead(lead);
@@ -136,9 +136,9 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
     try {
       const numericValue = parseFloat(saleValue.replace(',', '.')) || 0;
 
-      // Update lead in Firestore with converted status and sale value
+      // Update lead in Firestore with fechado status and sale value
       await updateLead(convertingLead.id, {
-        status: 'convertido',
+        status: 'fechado',
         value: numericValue
       });
 
@@ -191,8 +191,9 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
         return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Novo Lead</span>;
       case 'em_atendimento':
         return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Em Atendimento</span>;
+      case 'fechado':
       case 'convertido':
-        return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200"><CheckCircle2 className="w-3.5 h-3.5" /> Convertido</span>;
+        return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200"><CheckCircle2 className="w-3.5 h-3.5" /> Fechado</span>;
       case 'perdido':
         return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">Perdido</span>;
       default:
@@ -214,7 +215,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
       (searchDigits.length > 0 && (lead.whatsappNumber || '').replace(/\D/g, '').includes(searchDigits));
 
     const currentStatus = (lead.status || 'novo').toLowerCase();
-    const matchesStatus = statusFilter === 'todos' || currentStatus === statusFilter;
+    const matchesStatus = statusFilter === 'todos' || currentStatus === statusFilter || (statusFilter === 'fechado' && currentStatus === 'convertido');
 
     return matchesSearch && matchesStatus;
   });
@@ -223,7 +224,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
   const totalLeads = leads.length;
   const newLeadsCount = leads.filter(l => (l.status || 'novo').toLowerCase() === 'novo').length;
   const inProgressCount = leads.filter(l => (l.status || '').toLowerCase() === 'em_atendimento').length;
-  const convertedCount = leads.filter(l => (l.status || '').toLowerCase() === 'convertido').length;
+  const closedCount = leads.filter(l => ['fechado', 'convertido'].includes((l.status || '').toLowerCase())).length;
 
   return (
     <div className="space-y-5 sm:space-y-6 pb-28 sm:pb-12 max-w-full overflow-hidden">
@@ -262,8 +263,8 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
           <p className="text-xl sm:text-2xl font-bold text-amber-700 mt-1 sm:mt-2">{inProgressCount}</p>
         </div>
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-blue-200 bg-blue-50/30 shadow-sm">
-          <p className="text-[10px] sm:text-xs font-semibold text-blue-700 uppercase tracking-wider">Convertidos</p>
-          <p className="text-xl sm:text-2xl font-bold text-blue-700 mt-1 sm:mt-2">{convertedCount}</p>
+          <p className="text-[10px] sm:text-xs font-semibold text-blue-700 uppercase tracking-wider">Fechados</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-700 mt-1 sm:mt-2">{closedCount}</p>
         </div>
       </div>
 
@@ -286,7 +287,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
             { id: 'todos', label: 'Todos' },
             { id: 'novo', label: 'Novos' },
             { id: 'em_atendimento', label: 'Atendimento' },
-            { id: 'convertido', label: 'Convertidos' },
+            { id: 'fechado', label: 'Fechados' },
             { id: 'perdido', label: 'Perdidos' },
           ].map(tab => (
             <button
@@ -379,7 +380,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                     </div>
 
                     {/* Valor da Venda */}
-                    {(lead.value > 0 || (lead.status || '').toLowerCase() === 'convertido') && (
+                    {(lead.value > 0 || ['fechado', 'convertido'].includes((lead.status || '').toLowerCase())) && (
                       <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
                         <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
                           <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -412,13 +413,13 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-slate-500 shrink-0">Mudar Status:</span>
                     <select
-                      value={lead.status}
+                      value={['fechado', 'convertido'].includes(lead.status) ? 'fechado' : lead.status}
                       onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
                       className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-900 min-h-[38px] sm:min-h-0 cursor-pointer"
                     >
                       <option value="novo">Novo</option>
                       <option value="em_atendimento">Em Atendimento</option>
-                      <option value="convertido">Convertido</option>
+                      <option value="fechado">Fechado</option>
                       <option value="perdido">Perdido</option>
                     </select>
                   </div>
@@ -553,13 +554,13 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   Status
                 </label>
                 <select
-                  value={formData.status}
+                  value={['fechado', 'convertido'].includes(formData.status) ? 'fechado' : formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as LeadStatus })}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white"
                 >
                   <option value="novo">Novo</option>
                   <option value="em_atendimento">Em Atendimento</option>
-                  <option value="convertido">Convertido</option>
+                  <option value="fechado">Fechado</option>
                   <option value="perdido">Perdido</option>
                 </select>
               </div>
