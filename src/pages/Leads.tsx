@@ -18,7 +18,8 @@ import {
   Filter,
   Users,
   DollarSign,
-  Check
+  Check,
+  Tag
 } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
 
@@ -55,6 +56,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
     selectedCity: '',
     selectedFurniture: '',
     notes: '',
+    gclid: '',
     status: 'novo' as LeadStatus,
     source: 'Manual'
   });
@@ -66,6 +68,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
       selectedCity: '',
       selectedFurniture: '',
       notes: '',
+      gclid: '',
       status: 'novo',
       source: 'Manual'
     });
@@ -81,6 +84,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
       selectedCity: lead.selectedCity || '',
       selectedFurniture: lead.selectedFurniture || '',
       notes: lead.notes || '',
+      gclid: lead.gclid || '',
       status: lead.status || 'novo',
       source: lead.source || 'Formulário'
     });
@@ -211,6 +215,7 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
       (lead.selectedCity || '').toLowerCase().includes(searchLower) ||
       (lead.selectedFurniture || '').toLowerCase().includes(searchLower) ||
       (lead.notes || '').toLowerCase().includes(searchLower) ||
+      (lead.gclid || '').toLowerCase().includes(searchLower) ||
       (lead.whatsappNumber || '').toLowerCase().includes(searchLower) ||
       (searchDigits.length > 0 && (lead.whatsappNumber || '').replace(/\D/g, '').includes(searchDigits));
 
@@ -394,6 +399,19 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                       </div>
                     )}
 
+                    {/* GCLID (Google Click ID) */}
+                    {lead.gclid && (
+                      <div className="flex items-center justify-between gap-2 text-slate-700 min-w-0">
+                        <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+                          <Tag className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="font-medium text-[10px] sm:text-xs text-slate-500 uppercase">GCLID:</span>
+                        </div>
+                        <span className="font-mono text-[10px] sm:text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 truncate max-w-[60%] text-right select-all" title={lead.gclid}>
+                          {lead.gclid}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Observações / Notes */}
                     {lead.notes && (
                       <div className="mt-2.5 p-2.5 sm:p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-1 min-w-0">
@@ -563,6 +581,19 @@ export default function Leads({ store, onNavigateToBooking }: LeadsProps) {
                   <option value="fechado">Fechado</option>
                   <option value="perdido">Perdido</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  GCLID (Google Click ID)
+                </label>
+                <input
+                  type="text"
+                  value={formData.gclid}
+                  onChange={(e) => setFormData({ ...formData, gclid: e.target.value })}
+                  placeholder="Ex: Cj0KCQiA..."
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white"
+                />
               </div>
 
               <div>

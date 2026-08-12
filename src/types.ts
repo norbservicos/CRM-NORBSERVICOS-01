@@ -68,6 +68,7 @@ export interface Lead {
   createdAt: string;
   source?: string;
   value?: number;
+  gclid?: string;
   uid?: string;
 }
 

@@ -95,6 +95,7 @@ function parseLeadDoc(docSnap: any): Lead {
   const selectedCity = data.selectedCity || data.SelectedCity || data.city || data.City || data.cidade || '';
   const selectedFurniture = data.selectedFurniture || data.SelectedFurniture || data.furniture || data.Furniture || data.serviceInterest || data.servico || '';
   const notes = data.notes || data.Notes || data.message || data.observations || data.observacao || '';
+  const gclid = data.gclid || data.Gclid || data.gClickId || data.g_click_id || data.GCLID || '';
   const rawStatus = data.status || data.Status;
   const status = (rawStatus ? rawStatus.toString().trim().toLowerCase() : 'novo') as Lead['status'];
 
@@ -106,6 +107,7 @@ function parseLeadDoc(docSnap: any): Lead {
     selectedCity,
     selectedFurniture,
     notes,
+    gclid,
     status: status || 'novo',
     createdAt,
     source: data.source || 'Formulário',
@@ -535,6 +537,9 @@ export function useStore() {
     if (lead.notes !== undefined) {
       updates.Notes = lead.notes;
       updates.notes = lead.notes;
+    }
+    if (lead.gclid !== undefined) {
+      updates.gclid = lead.gclid;
     }
     if (lead.selectedCity !== undefined) {
       updates.SelectedCity = lead.selectedCity;
