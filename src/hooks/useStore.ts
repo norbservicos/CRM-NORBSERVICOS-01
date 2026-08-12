@@ -554,8 +554,6 @@ export function useStore() {
     }
     if (lead.value !== undefined) {
       updates.value = Number(lead.value) || 0;
-      updates.Value = Number(lead.value) || 0;
-      updates.valor = Number(lead.value) || 0;
     }
 
     for (const targetDb of targetDbs) {
