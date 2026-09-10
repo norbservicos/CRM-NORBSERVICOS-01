@@ -1,5 +1,6 @@
 {
   "name": "NORB Gestão Pro",
-  "description": "App completo para gestão de agendamentos, clientes e financeiro da NORB Gestão Pro. Inclui relatórios, agenda visual e integração com WhatsApp.",
-  "requestFramePermissions": []
+  "description": "App completo para gestão de agendamentos, clientes e financeiro da NORB Serviços. Inclui orçamentos em formato A4, agenda visual e integração com WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

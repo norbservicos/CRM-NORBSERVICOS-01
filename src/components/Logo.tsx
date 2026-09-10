@@ -3,15 +3,17 @@ import React from 'react';
 interface LogoProps {
   className?: string;
   collapsed?: boolean;
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'servicos';
+  subtitle?: string;
 }
 
-export const Logo: React.FC<LogoProps> = ({ className, collapsed, variant = 'dark' }) => {
+export const Logo: React.FC<LogoProps> = ({ className, collapsed, variant = 'dark', subtitle = 'SERVIÇOS' }) => {
   const isLight = variant === 'light';
-  const mainColor = isLight ? 'black' : 'white';
-  const textColor = isLight ? 'text-slate-900' : 'text-white';
-  const subTextColor = isLight ? 'text-blue-600' : 'text-blue-400';
-  const lineColor = isLight ? 'bg-blue-200' : 'bg-blue-500/50';
+  const isServicos = variant === 'servicos';
+  const mainColor = isLight ? 'black' : '#0284c7';
+  const textColor = isLight ? 'text-slate-900' : (isServicos ? 'text-sky-500' : 'text-white');
+  const subTextColor = isLight ? 'text-blue-600' : (isServicos ? 'text-sky-400' : 'text-blue-400');
+  const lineColor = isLight ? 'bg-blue-200' : (isServicos ? 'bg-sky-400/60' : 'bg-blue-500/50');
 
   if (collapsed) {
     return (
@@ -90,7 +92,7 @@ export const Logo: React.FC<LogoProps> = ({ className, collapsed, variant = 'dar
         <span className={`text-2xl font-black tracking-tighter ${textColor} leading-none`}>NORB</span>
         <div className="flex items-center">
           <div className={`h-[1px] flex-1 ${lineColor}`}></div>
-          <span className={`text-[9px] font-bold tracking-[0.15em] ${subTextColor} px-2 uppercase whitespace-nowrap`}>Gestão Pro</span>
+          <span className={`text-[9px] font-bold tracking-[0.15em] ${subTextColor} px-2 uppercase whitespace-nowrap`}>{subtitle}</span>
           <div className={`h-[1px] flex-1 ${lineColor}`}></div>
         </div>
       </div>
