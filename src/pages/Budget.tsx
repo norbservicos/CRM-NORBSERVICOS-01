@@ -50,9 +50,9 @@ export default function Budget() {
   const { clients, leads } = useStore();
 
   // Client Details
-  const [clientName, setClientName] = useState('Mariana');
-  const [clientPhone, setClientPhone] = useState('(31) 98353-8588');
-  const [clientAddress, setClientAddress] = useState('Belo Horizonte - MG');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
 
   // Budget Metadata
   const [budgetCode, setBudgetCode] = useState(() => `ORC-${Math.floor(1000000 + Math.random() * 9000000)}A`);
@@ -66,9 +66,9 @@ export default function Budget() {
   const [items, setItems] = useState<BudgetItem[]>([
     {
       id: '1',
-      description: 'Colchão casal TRADICIONAL (138 x 188 cm)',
+      description: '',
       unit: 'Unid.',
-      unitPrice: 280,
+      unitPrice: 0,
       measurement: '-',
       quantity: 1
     }
@@ -163,6 +163,15 @@ export default function Budget() {
   const removeItem = (id: string) => {
     if (items.length > 1) {
       setItems(items.filter(i => i.id !== id));
+    } else {
+      setItems([{
+        id: Math.random().toString(36).substr(2, 9),
+        description: '',
+        unit: 'Unid.',
+        unitPrice: 0,
+        measurement: '-',
+        quantity: 1
+      }]);
     }
   };
 
@@ -181,7 +190,7 @@ export default function Budget() {
         contactList.push({
           name: c.name,
           phone: c.phone || '',
-          address: [c.address, c.city].filter(Boolean).join(', ') || 'Belo Horizonte - MG',
+          address: [c.address, c.city].filter(Boolean).join(', ') || 'Coronel Fabriciano - MG',
           source: 'Cliente'
         });
       }
@@ -192,7 +201,7 @@ export default function Budget() {
         contactList.push({
           name: l.fullName,
           phone: l.whatsappNumber || '',
-          address: l.selectedCity || 'Belo Horizonte - MG',
+          address: l.selectedCity || 'Coronel Fabriciano - MG',
           source: 'Lead'
         });
       }
@@ -426,7 +435,7 @@ export default function Budget() {
                   type="text"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Ex: Mariana Silva"
+                  placeholder="Nome completo do cliente"
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                 />
               </div>
@@ -438,7 +447,7 @@ export default function Budget() {
                     type="text"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="(31) 98353-8588"
+                    placeholder="(31) 99999-9999"
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                   />
                 </div>
@@ -460,7 +469,7 @@ export default function Budget() {
                   type="text"
                   value={clientAddress}
                   onChange={(e) => setClientAddress(e.target.value)}
-                  placeholder="Ex: Bairro Belvedere, Belo Horizonte - MG"
+                  placeholder="Ex: Bairro Centro, Coronel Fabriciano - MG"
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                 />
               </div>
@@ -530,16 +539,14 @@ export default function Budget() {
                 <div key={item.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 relative">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500">Item #{index + 1}</span>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
-                        title="Remover item"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
+                      title={items.length > 1 ? "Remover item" : "Limpar item"}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
 
                   <div>
@@ -548,7 +555,7 @@ export default function Budget() {
                       type="text"
                       value={item.description}
                       onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      placeholder="Ex: Colchão casal TRADICIONAL (138 x 188 cm)"
+                      placeholder="Ex: Higienização de Estofados, Sofá 3 lugares..."
                       className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-900"
                     />
                   </div>
@@ -752,7 +759,7 @@ export default function Budget() {
                   <div className="pt-1 text-[13px] leading-snug">
                     <div className="font-black text-slate-900 tracking-tight text-base">NORB SERVIÇOS</div>
                     <div className="text-slate-600 font-medium">CNPJ: 58.852.280/0001-46</div>
-                    <div className="text-slate-500 font-normal">Belo Horizonte e Região Metropolitana</div>
+                    <div className="text-slate-500 font-normal">Coronel Fabriciano e Região</div>
                     <div className="text-[12px] italic text-slate-500 font-medium pt-0.5">
                       Higienização Profissional de Estofados
                     </div>
@@ -762,10 +769,10 @@ export default function Budget() {
                 {/* Header Right: Date + Contact */}
                 <div className="text-right text-[12px] text-slate-600 space-y-1 pt-1">
                   <div className="font-bold text-slate-800 text-sm">{issueDate}</div>
-                  <div>contato.norbservicos@gmail.com</div>
+                  <div>norbservicos25@gmail.com</div>
                   <div>Tel: (31) 98353-8588</div>
                   <div className="font-semibold text-slate-800">WhatsApp: (31) 98353-8588</div>
-                  <div className="text-slate-500">Instagram: @norbservicos</div>
+                  <div className="text-slate-500">Instagram: @norb_servicos</div>
                 </div>
               </div>
 
@@ -780,15 +787,15 @@ export default function Budget() {
                 <div className="border border-t-0 border-slate-200 p-3.5 rounded-b-md text-xs space-y-1 bg-white">
                   <div>
                     <span className="font-bold text-slate-800">Cliente: </span>
-                    <span className="text-slate-700">{clientName || 'Cliente'}</span>
+                    <span className="text-slate-700">{clientName || '-'}</span>
                   </div>
                   <div>
                     <span className="font-bold text-slate-800">Tel: </span>
-                    <span className="text-slate-700">{clientPhone || '(31) 98353-8588'}</span>
+                    <span className="text-slate-700">{clientPhone || '-'}</span>
                   </div>
                   <div>
                     <span className="font-bold text-slate-800">Endereço: </span>
-                    <span className="text-slate-700">{clientAddress || 'Belo Horizonte - MG'}</span>
+                    <span className="text-slate-700">{clientAddress || '-'}</span>
                   </div>
                 </div>
               </div>
@@ -826,7 +833,7 @@ export default function Budget() {
                       {items.map((item) => (
                         <tr key={item.id} className="hover:bg-slate-50/30">
                           <td className="py-2.5 px-3 font-medium text-slate-900">
-                            {item.description || 'Higienização Profissional'}
+                            {item.description || '-'}
                           </td>
                           <td className="py-2.5 px-3 text-center text-slate-600">
                             {item.unit || 'Unid.'}
@@ -917,33 +924,13 @@ export default function Budget() {
                 </div>
               </div>
 
-              {/* Section 6: Banners Pretos de Confiança (Como na foto) */}
-              <div className="space-y-2 mb-6">
-                {/* Banner 1: Rocha */}
-                <div className="bg-black text-white text-center py-2.5 px-4 rounded-sm">
-                  <h2 className="text-base sm:text-lg font-black tracking-wide uppercase font-sans">
-                    Qualidade e confiança é como construir em uma rocha!
-                  </h2>
-                </div>
-
-                {/* Banner 2: Padrão */}
-                <div className="bg-black text-white text-center py-4 px-6 rounded-sm space-y-1">
-                  <p className="text-sm sm:text-base font-light tracking-wide text-slate-100">
-                    Eu não faço o certo só quando o cliente está olhando.
-                  </p>
-                  <p className="text-sm sm:text-base font-medium tracking-wide text-white">
-                    Faço sempre porque esse é o meu padrão.
-                  </p>
-                </div>
-              </div>
-
               {/* Document Footer Divider */}
               <div className="w-full h-0.5 bg-[#1e3a8a] mb-3" />
 
               {/* Document Footer Text */}
               <div className="text-center text-[11px] text-slate-500 space-y-0.5">
                 <div className="font-bold text-slate-700">
-                  NORB SERVIÇOS • (31) 98353-8588 • contato.norbservicos@gmail.com
+                  NORB SERVIÇOS • (31) 98353-8588 • norbservicos25@gmail.com
                 </div>
                 <div className="text-[10px] text-slate-400">
                   Estofados limpos e com garantia de verdade. Entre em contato para mais informações.
@@ -987,10 +974,12 @@ export default function Budget() {
             <div className="space-y-2.5">
               <a
                 href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(clientPhone.replace(/\D/g, ''))}&text=${encodeURIComponent(
-                  `Olá *${clientName.trim()}*, tudo bem?\n\n` +
+                  `Olá *${clientName.trim() || 'Cliente'}*, tudo bem?\n\n` +
                   `Aqui é da *NORB SERVIÇOS*! Segue o seu orçamento oficial:\n\n` +
                   `📋 *Orçamento:* ${budgetCode}\n` +
-                  `🛋️ *Itens:* \n${items.map(i => `• ${i.description} (${i.quantity}x) - R$ ${(i.quantity * i.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`).join('\n')}\n\n` +
+                  `🛋️ *Itens:* \n${(items.filter(i => i.description.trim()).length > 0
+                    ? items.filter(i => i.description.trim()).map(i => `• ${i.description} (${i.quantity}x) - R$ ${(i.quantity * i.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`).join('\n')
+                    : '• Higienização Profissional de Estofados')}\n\n` +
                   `💰 *Valor Total:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
                   (pixDiscount > 0 ? `⚡ *Com desconto no Pix:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` : '') +
                   (cardInstallments ? `💳 *Cartão:* ${cardInstallments}\n` : '') +
