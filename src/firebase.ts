@@ -9,22 +9,11 @@ export const app = initializeApp(firebaseConfig);
 // Configured AI Studio database
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Default database (used by standard web clients using getFirestore(app))
-export const defaultDb = getFirestore(app);
+// Default database alias pointing to the configured database
+// (avoids calling getFirestore(app) without databaseId which triggers "Database '(default)' not found")
+export const defaultDb = db;
 
-// Optional named database 'norb-crm'
-export let norbCrmDb: ReturnType<typeof getFirestore> | null = null;
-try {
-  norbCrmDb = getFirestore(app, 'norb-crm');
-} catch (e) {
-  // Ignore
-}
-
-export const allDatabases = [
-  db,
-  ...(defaultDb !== db ? [defaultDb] : []),
-  ...(norbCrmDb ? [norbCrmDb] : [])
-];
+export const allDatabases = [db];
 
 export const auth = getAuth(app);
 
