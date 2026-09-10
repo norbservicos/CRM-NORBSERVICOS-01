@@ -16,10 +16,15 @@ import {
   Sparkles,
   Search,
   Zap,
-  ArrowRight
+  ArrowRight,
+  MessageCircle,
+  Copy,
+  Check,
+  ExternalLink,
+  Send
 } from 'lucide-react';
 import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import autoTable from 'jspdf-autotable';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { NorbLogoDocument } from '../components/NorbLogoDocument';
 import { useStore } from '../hooks/useStore';
@@ -88,8 +93,23 @@ export default function Budget() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareFileName, setShareFileName] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [canShareFiles, setCanShareFiles] = useState<boolean>(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'canShare' in navigator) {
+      try {
+        const dummyFile = new File(['foo'], 'foo.pdf', { type: 'application/pdf' });
+        setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
+      } catch {
+        setCanShareFiles(false);
+      }
+    }
+  }, []);
 
   const budgetRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -243,82 +263,399 @@ export default function Budget() {
     window.print();
   };
 
-  // PDF Export
-  const exportToPdf = async () => {
-    if (!budgetRef.current) return;
-    setGeneratingPdf(true);
+  // WhatsApp Pre-formatted Message
+  const whatsappMessage = useMemo(() => {
+    const validItems = items.filter(i => i.description.trim());
+    const itemsText = validItems.length > 0
+      ? validItems.map(i => `• ${i.description} (${i.quantity}x) - R$ ${(i.quantity * i.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`).join('\n')
+      : '• Higienização Profissional de Estofados';
 
-    const originalGetComputedStyle = window.getComputedStyle;
-    window.getComputedStyle = function (elt, pseudoElt) {
-      const style = originalGetComputedStyle(elt, pseudoElt);
-      return new Proxy(style, {
-        get(target: any, prop: string | symbol) {
-          const value = Reflect.get(target, prop);
-          if (typeof value === 'function') {
-            return function(this: any, ...args: any[]) {
-              if (prop === 'getPropertyValue' && args[0]) {
-                const propVal = target.getPropertyValue(args[0]);
-                if (propVal && typeof propVal === 'string' && propVal.includes('oklch')) {
-                  return 'rgba(0, 0, 0, 0)';
-                }
-                return propVal;
-              }
-              return value.apply(target, args);
-            };
-          }
-          if (typeof value === 'string' && value.includes('oklch')) {
-            return 'rgba(0, 0, 0, 0)';
-          }
-          return value;
+    return (
+      `Olá *${clientName.trim() || 'Cliente'}*, tudo bem?\n\n` +
+      `Aqui é da *NORB SERVIÇOS*! Segue o seu orçamento oficial:\n\n` +
+      `📋 *Orçamento:* ${budgetCode}\n` +
+      `🛋️ *Itens:* \n${itemsText}\n\n` +
+      `💰 *Valor Total:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
+      (pixDiscount > 0 ? `⚡ *Com desconto no Pix:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` : '') +
+      (cardInstallments ? `💳 *Cartão:* ${cardInstallments}\n` : '') +
+      `🛡️ *Garantia:* 72 horas para falhas de execução\n` +
+      `⏱️ *Secagem estimada:* 6 a 14 horas\n` +
+      `📅 *Validade:* ${validityDays} dias (até ${expirationDate})\n\n` +
+      `Estou enviando o arquivo PDF oficial em anexo. Podemos agendar o melhor dia para você?`
+    );
+  }, [clientName, budgetCode, items, total, pixDiscount, cardInstallments, validityDays, expirationDate]);
+
+  const whatsappUrl = useMemo(() => {
+    const cleanPhone = clientPhone.replace(/\D/g, '');
+    let phoneQuery = '';
+    if (cleanPhone) {
+      const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      phoneQuery = `&phone=${fullPhone}`;
+    }
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}${phoneQuery}`;
+  }, [clientPhone, whatsappMessage]);
+
+  // High-precision, zero-crash vector PDF Generator using jsPDF + autoTable
+  const createNorbBudgetPdf = async () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const primaryColor: [number, number, number] = [30, 58, 138]; // #1e3a8a Navy Blue
+    const slateDark: [number, number, number] = [15, 23, 42]; // #0f172a
+    const slateMedium: [number, number, number] = [71, 85, 105]; // #475569
+    const borderSlate: [number, number, number] = [226, 232, 240]; // #e2e8f0
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 14;
+    const contentWidth = pageWidth - (margin * 2);
+    let curY = 14;
+
+    // Header Left: Logo & Company Info
+    let logoPlaced = false;
+    if (customLogo) {
+      try {
+        doc.addImage(customLogo, 'JPEG', margin, curY, 26, 14);
+        logoPlaced = true;
+      } catch {
+        try {
+          doc.addImage(customLogo, 'PNG', margin, curY, 26, 14);
+          logoPlaced = true;
+        } catch {
+          logoPlaced = false;
         }
-      }) as any;
+      }
+    }
+
+    const textStartX = logoPlaced ? margin + 30 : margin;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(...primaryColor);
+    doc.text('NORB SERVIÇOS', textStartX, curY + (logoPlaced ? 4.5 : 5.5));
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...slateMedium);
+    doc.text('CNPJ: 58.852.280/0001-46', textStartX, curY + (logoPlaced ? 8.5 : 10));
+    doc.text('Coronel Fabriciano e Região', textStartX, curY + (logoPlaced ? 12 : 14));
+    doc.setFont('helvetica', 'italic');
+    doc.text('Higienização Profissional de Estofados', textStartX, curY + (logoPlaced ? 15.5 : 18));
+
+    // Header Right: Date, Contact & Social
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...slateDark);
+    doc.text(issueDate, pageWidth - margin, curY + 4, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...slateMedium);
+    doc.text('norbservicos25@gmail.com', pageWidth - margin, curY + 8, { align: 'right' });
+    doc.text('Tel: (31) 98353-8588', pageWidth - margin, curY + 11.8, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text('WhatsApp: (31) 98353-8588', pageWidth - margin, curY + 15.6, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.text('Instagram: @norb_servicos', pageWidth - margin, curY + 19.4, { align: 'right' });
+
+    curY += 23;
+
+    // Horizontal Accent Navy Divider Line
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.8);
+    doc.line(margin, curY, pageWidth - margin, curY);
+
+    curY += 4;
+
+    const drawSectionHeader = (title: string, y: number) => {
+      doc.setFillColor(...primaryColor);
+      doc.roundedRect(margin, y, contentWidth, 6, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(title, margin + 4, y + 4.2);
+      return y + 6;
     };
 
+    // 1. Orçamento Box (Client, Phone, Address)
+    const yBox1 = drawSectionHeader(`Orçamento ${budgetCode}`, curY);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderSlate);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yBox1, contentWidth, 16, 'DF');
+    doc.setFontSize(8);
+    doc.setTextColor(...slateDark);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cliente: ', margin + 4, yBox1 + 4.8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(clientName.trim() || '-', margin + 17, yBox1 + 4.8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tel: ', margin + 4, yBox1 + 9.2);
+    doc.setFont('helvetica', 'normal');
+    doc.text(clientPhone.trim() || '-', margin + 17, yBox1 + 9.2);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Endereço: ', margin + 4, yBox1 + 13.6);
+    doc.setFont('helvetica', 'normal');
+    doc.text(clientAddress.trim() || '-', margin + 21, yBox1 + 13.6);
+
+    curY = yBox1 + 19;
+
+    // 2. Informações Básicas (Validade)
+    const yBox2 = drawSectionHeader('Informações Básicas', curY);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderSlate);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yBox2, contentWidth, 7, 'DF');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slateDark);
+    doc.text('Validade: ', margin + 4, yBox2 + 4.8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${validityDays} dias (até ${expirationDate})`, margin + 18, yBox2 + 4.8);
+
+    curY = yBox2 + 10;
+
+    // 3. Produtos / Serviços Table
+    const yBox3 = drawSectionHeader('Produtos', curY);
+
+    const tableBody = items.map((item) => [
+      item.description || '-',
+      item.unit || 'Unid.',
+      `R$ ${item.unitPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      item.measurement || '-',
+      String(item.quantity),
+      `R$ ${(item.quantity * item.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+    ]);
+
+    autoTable(doc, {
+      startY: yBox3,
+      margin: { left: margin, right: margin },
+      head: [['Descrição', 'Unidade', 'Preço Unit.', 'Medida', 'Qtd.', 'Preço']],
+      body: tableBody,
+      theme: 'plain',
+      headStyles: {
+        fillColor: [248, 250, 252],
+        textColor: [30, 41, 59],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        lineWidth: { bottom: 0.2 },
+        lineColor: [226, 232, 240]
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [15, 23, 42],
+        lineWidth: { bottom: 0.1 },
+        lineColor: [241, 245, 249]
+      },
+      columnStyles: {
+        0: { cellWidth: 72 },
+        1: { halign: 'center', cellWidth: 20 },
+        2: { halign: 'right', cellWidth: 26 },
+        3: { halign: 'center', cellWidth: 20 },
+        4: { halign: 'center', cellWidth: 16 },
+        5: { halign: 'right', cellWidth: 28 }
+      },
+      styles: { cellPadding: 2 }
+    });
+
+    const tabEnd = (doc as any).lastAutoTable?.finalY || (yBox3 + 20);
+
+    // Subtotal, Desconto Pix and Total Box
+    doc.setDrawColor(...borderSlate);
+    doc.setLineWidth(0.2);
+    doc.line(margin, tabEnd, pageWidth - margin, tabEnd);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slateMedium);
+    doc.text('Subtotal:', pageWidth - margin - 50, tabEnd + 4.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...slateDark);
+    doc.text(`R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, pageWidth - margin - 4, tabEnd + 4.5, { align: 'right' });
+
+    let curTotalY = tabEnd + 6;
+    if (pixDiscount > 0) {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...primaryColor);
+      doc.text('Desconto Pix:', pageWidth - margin - 50, curTotalY + 3.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`- R$ ${pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, pageWidth - margin - 4, curTotalY + 3.5, { align: 'right' });
+      curTotalY += 5;
+    }
+
+    // TOTAL Banner
+    const totalBoxWidth = 80;
+    const totalBoxHeight = 8;
+    const totalBoxX = pageWidth - margin - totalBoxWidth;
+    const totalBoxY = curTotalY + 1;
+
+    doc.setFillColor(...primaryColor);
+    doc.roundedRect(totalBoxX, totalBoxY, totalBoxWidth, totalBoxHeight, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('TOTAL:', totalBoxX + 4, totalBoxY + 5.5);
+    doc.text(`R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, totalBoxX + totalBoxWidth - 4, totalBoxY + 5.5, { align: 'right' });
+
+    let afterTotalY = totalBoxY + totalBoxHeight + 2;
+    if (cardInstallments) {
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...slateMedium);
+      doc.text(`Cartão de Crédito: ${cardInstallments}`, pageWidth - margin - 4, afterTotalY + 3, { align: 'right' });
+      afterTotalY += 5;
+    }
+
+    curY = afterTotalY + 4;
+
+    // 4. Garantia
+    const yBox4 = drawSectionHeader('Garantia', curY);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderSlate);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yBox4, contentWidth, 7, 'DF');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slateDark);
+    doc.text('Higienização com garantia de 72 horas para falhas de execução.', margin + 4, yBox4 + 4.6);
+
+    curY = yBox4 + 10;
+
+    // 5. Termos e Condições
+    const yBox5 = drawSectionHeader('Termos e Condições', curY);
+    const termsH = 21;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderSlate);
+    doc.setLineWidth(0.2);
+    doc.rect(margin, yBox5, contentWidth, termsH, 'DF');
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slateMedium);
+    const terms = [
+      '1. É necessário acesso à água e energia elétrica no local.',
+      '2. O pagamento deverá ser realizado ao final do serviço, conforme proposta aprovada.',
+      '3. Os resultados variam conforme o estado do tecido, não sendo garantida a remoção total de manchas profundas ou desgaste natural.',
+      '4. O tempo de secagem é estimado, variando entre 6 e 14 horas, podendo ser menor em dias quentes ou ambientes bem ventilados.'
+    ];
+    let termY = yBox5 + 4;
+    terms.forEach((t) => {
+      doc.text(t, margin + 4, termY);
+      termY += 4.2;
+    });
+
+    // Footer (Fixed near bottom)
+    const footerY = pageHeight - 16;
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.4);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...slateDark);
+    doc.text('NORB SERVIÇOS  •  (31) 98353-8588  •  norbservicos25@gmail.com', pageWidth / 2, footerY + 4, { align: 'center' });
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slateMedium);
+    doc.text('Estofados limpos e com garantia de verdade. Entre em contato para mais informações.', pageWidth / 2, footerY + 7.8, { align: 'center' });
+    doc.text('Página 1 de 1', pageWidth - margin, footerY + 11, { align: 'right' });
+
+    return doc;
+  };
+
+  // Safe PDF Export & Share
+  const exportToPdf = async (triggerDirectShare = false) => {
+    setGeneratingPdf(true);
+
     try {
-      const element = budgetRef.current;
-      window.scrollTo(0, 0);
+      // Build pure vector PDF (instant, zero DOM / canvas bugs on iOS or Android)
+      const pdf = await createNorbBudgetPdf();
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: element.offsetWidth,
-        height: element.offsetHeight
-      });
+      const sanitizedClient = clientName.trim().replace(/[^a-zA-Z0-9_\u00C0-\u00FF-]/g, '_') || 'Cliente';
+      const fileName = `Orcamento_Norb_${sanitizedClient}.pdf`;
+      const blob = pdf.output('blob');
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      const objectUrl = URL.createObjectURL(blob);
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+      setPdfFile(file);
+      setPdfUrl(objectUrl);
+      setShareFileName(fileName);
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      if (imgHeight > pdfHeight) {
-        const ratio = pdfHeight / imgHeight;
-        const finalWidth = pdfWidth * ratio;
-        const finalHeight = pdfHeight;
-        pdf.addImage(imgData, 'JPEG', (pdfWidth - finalWidth) / 2, 0, finalWidth, finalHeight);
-      } else {
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
+      // On Mobile: If user requested direct share via native WhatsApp/Share sheet
+      if (triggerDirectShare && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Orçamento Norb - ${clientName.trim() || 'Cliente'}`,
+            text: `Olá ${clientName.trim() || ''}! Segue o seu orçamento oficial da Norb Serviços.`
+          });
+          setShowShareModal(false);
+          return { file, objectUrl, fileName };
+        } catch (shareErr: any) {
+          if (shareErr?.name === 'AbortError') {
+            setShowShareModal(false);
+            return { file, objectUrl, fileName };
+          }
+        }
       }
 
-      const fileName = `Orcamento_Norb_${clientName.trim().replace(/\s+/g, '_') || 'Cliente'}.pdf`;
-      pdf.save(fileName);
-      setShareFileName(fileName);
+      // If on desktop or standard download requested, download cleanly
+      if (!triggerDirectShare) {
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
       setShowShareModal(true);
+      return { file, objectUrl, fileName };
     } catch (err) {
       console.error('Erro ao gerar PDF do orçamento:', err);
-      alert('Houve um erro ao gerar o PDF. Você também pode clicar no botão "Imprimir / Salvar PDF" para salvar diretamente pelo navegador.');
+      alert('Não foi possível gerar o PDF: ' + (err instanceof Error ? err.message : String(err)) + '. Utilize o botão "Imprimir / Salvar A4" para salvar como PDF.');
+      return null;
     } finally {
-      window.getComputedStyle = originalGetComputedStyle;
       setGeneratingPdf(false);
+    }
+  };
+
+  // Direct Share PDF File (WhatsApp / Mobile Share Sheet)
+  const handleShareFileDirect = async () => {
+    if (pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      try {
+        await navigator.share({
+          files: [pdfFile],
+          title: `Orçamento Norb - ${clientName.trim() || 'Cliente'}`,
+          text: `Olá ${clientName.trim() || ''}! Segue o orçamento oficial da Norb Serviços.`
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    // Fallback: download PDF and open WhatsApp
+    handleDownloadAgain();
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDownloadAgain = () => {
+    if (!pdfUrl) return;
+    const a = document.createElement('a');
+    a.href = pdfUrl;
+    a.download = shareFileName || 'Orcamento_Norb.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleCopySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(whatsappMessage);
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2500);
+    } catch {
+      // fallback
     }
   };
 
@@ -353,9 +690,20 @@ export default function Budget() {
           </button>
 
           <button
-            onClick={exportToPdf}
+            onClick={() => exportToPdf(false)}
             disabled={generatingPdf}
-            className="px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-900/20 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+            title="Baixar arquivo PDF no dispositivo"
+          >
+            <Download size={16} className="text-slate-600" />
+            <span>Baixar PDF</span>
+          </button>
+
+          <button
+            onClick={() => exportToPdf(true)}
+            disabled={generatingPdf}
+            className="px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-[#25D366]/20 cursor-pointer disabled:opacity-50"
+            title="Gerar PDF e compartilhar no WhatsApp"
           >
             {generatingPdf ? (
               <span className="flex items-center gap-2">
@@ -364,8 +712,8 @@ export default function Budget() {
               </span>
             ) : (
               <>
-                <Download size={16} />
-                <span>Baixar PDF</span>
+                <MessageCircle size={16} />
+                <span>Compartilhar no WhatsApp</span>
               </>
             )}
           </button>
@@ -700,21 +1048,36 @@ export default function Budget() {
           </div>
 
           {/* Share Action */}
-          <button
-            type="button"
-            onClick={exportToPdf}
-            disabled={generatingPdf}
-            className="w-full py-4 bg-blue-900 hover:bg-slate-900 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-xl shadow-blue-900/20 transition-all cursor-pointer disabled:opacity-50"
-          >
-            {generatingPdf ? (
-              <span>Gerando PDF A4...</span>
-            ) : (
-              <>
-                <Share2 size={20} />
-                <span>Gerar e Enviar Orçamento</span>
-              </>
-            )}
-          </button>
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => exportToPdf(true)}
+              disabled={generatingPdf}
+              className="w-full py-4 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-xl shadow-[#25D366]/20 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {generatingPdf ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                  Gerando PDF...
+                </span>
+              ) : (
+                <>
+                  <MessageCircle size={22} />
+                  <span>Gerar e Compartilhar no WhatsApp</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => exportToPdf(false)}
+              disabled={generatingPdf}
+              className="w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Download size={17} className="text-slate-600" />
+              <span>Apenas Baixar Arquivo PDF</span>
+            </button>
+          </div>
         </div>
 
         {/* Document Preview (Right Column - Exact A4 Sheet as in User Photo) */}
@@ -749,6 +1112,7 @@ export default function Budget() {
                         src={customLogo}
                         alt="Norb Serviços"
                         className="h-16 w-auto max-w-[220px] object-contain"
+                        crossOrigin="anonymous"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
@@ -949,60 +1313,91 @@ export default function Budget() {
       {/* Share / WhatsApp Modal */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="text-center space-y-2">
-              <div className="w-14 h-14 bg-blue-50 text-blue-900 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 size={32} />
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-sm">
+                <CheckCircle2 size={36} />
               </div>
-              <h3 className="text-xl font-black text-slate-900">Orçamento Pronto!</h3>
+              <h3 className="text-2xl font-black text-slate-900">PDF Gerado com Sucesso!</h3>
               <p className="text-slate-600 text-xs sm:text-sm">
-                O arquivo <strong className="text-slate-900">{shareFileName}</strong> foi baixado no seu dispositivo.
+                O arquivo <strong className="text-slate-900">{shareFileName}</strong> está pronto para envio ao cliente.
               </p>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-2">
-              <p className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-blue-900">
-                <Share2 size={13} /> Dica de envio ao cliente:
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Clique abaixo para abrir a conversa no WhatsApp.</li>
-                <li>Envie a mensagem com os valores e detalhes resumidos.</li>
-                <li>Anexe o PDF que foi baixado no seu aparelho!</li>
-              </ul>
-            </div>
+            {/* WhatsApp Direct Actions */}
+            <div className="space-y-3">
+              {/* Option A: Direct File Share (Mobile / Web Share API) */}
+              <button
+                type="button"
+                onClick={handleShareFileDirect}
+                className="w-full py-4 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-2xl font-bold text-center flex items-center justify-center gap-3 shadow-xl shadow-[#25D366]/25 transition-all text-sm sm:text-base cursor-pointer"
+              >
+                <MessageCircle size={22} />
+                <span>Enviar Arquivo PDF no WhatsApp</span>
+              </button>
 
-            <div className="space-y-2.5">
+              {/* Option B: Open WhatsApp with Formatted Text */}
               <a
-                href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(clientPhone.replace(/\D/g, ''))}&text=${encodeURIComponent(
-                  `Olá *${clientName.trim() || 'Cliente'}*, tudo bem?\n\n` +
-                  `Aqui é da *NORB SERVIÇOS*! Segue o seu orçamento oficial:\n\n` +
-                  `📋 *Orçamento:* ${budgetCode}\n` +
-                  `🛋️ *Itens:* \n${(items.filter(i => i.description.trim()).length > 0
-                    ? items.filter(i => i.description.trim()).map(i => `• ${i.description} (${i.quantity}x) - R$ ${(i.quantity * i.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`).join('\n')
-                    : '• Higienização Profissional de Estofados')}\n\n` +
-                  `💰 *Valor Total:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
-                  (pixDiscount > 0 ? `⚡ *Com desconto no Pix:* R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` : '') +
-                  (cardInstallments ? `💳 *Cartão:* ${cardInstallments}\n` : '') +
-                  `🛡️ *Garantia:* 72 horas para falhas de execução\n` +
-                  `⏱️ *Secagem estimada:* 6 a 14 horas\n\n` +
-                  `Estou enviando o arquivo PDF oficial em anexo. Podemos agendar o melhor dia para você?`
-                )}`}
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowShareModal(false)}
-                className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all text-sm cursor-pointer"
+                className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all text-xs sm:text-sm cursor-pointer"
               >
-                <Share2 size={18} />
-                Enviar Mensagem no WhatsApp
+                <ExternalLink size={16} />
+                <span>Abrir WhatsApp com Resumo dos Valores</span>
               </a>
 
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all cursor-pointer"
-              >
-                Concluir
-              </button>
+              {/* Option C: Copy text & Download Again */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopySummary}
+                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  {copiedSummary ? (
+                    <>
+                      <Check size={15} className="text-emerald-600" />
+                      <span className="text-emerald-700">Texto Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={15} />
+                      <span>Copiar Resumo</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadAgain}
+                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Download size={15} />
+                  <span>Baixar Novamente</span>
+                </button>
+              </div>
             </div>
+
+            {/* Instruction Tip */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+              <p className="font-bold text-slate-900 text-[11px] flex items-center gap-1.5 text-blue-900 uppercase tracking-wider">
+                <Share2 size={13} /> Como enviar ao cliente:
+              </p>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                <strong>No celular:</strong> O botão verde acima abre o WhatsApp diretamente com o PDF anexado pronto para enviar.
+              </p>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                <strong>No computador:</strong> O PDF já foi salvo na sua pasta de Downloads. Clique em "Abrir WhatsApp" e anexe o documento na conversa!
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all cursor-pointer"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
