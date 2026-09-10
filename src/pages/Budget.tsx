@@ -319,7 +319,7 @@ export default function Budget() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6 print:hidden">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+            <div className="w-10 h-10 rounded-xl bg-blue-900 text-white flex items-center justify-center shadow-md shadow-blue-900/20">
               <FileText size={22} />
             </div>
             <div>
@@ -346,7 +346,7 @@ export default function Budget() {
           <button
             onClick={exportToPdf}
             disabled={generatingPdf}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 bg-blue-900 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-900/20 cursor-pointer disabled:opacity-50"
           >
             {generatingPdf ? (
               <span className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export default function Budget() {
                   setShowClientDropdown(true);
                 }}
                 onFocus={() => setShowClientDropdown(true)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-900 focus:bg-white transition-all"
               />
               {showClientDropdown && filteredCrmContacts.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden divide-y divide-slate-100">
@@ -415,7 +415,7 @@ export default function Budget() {
           {/* Client Information Form */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-slate-100">
-              <User size={16} className="text-emerald-600" />
+              <User size={16} className="text-blue-900" />
               1. Dados do Cliente
             </h3>
 
@@ -427,7 +427,7 @@ export default function Budget() {
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   placeholder="Ex: Mariana Silva"
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                 />
               </div>
 
@@ -439,7 +439,7 @@ export default function Budget() {
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
                     placeholder="(31) 98353-8588"
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                   />
                 </div>
 
@@ -449,7 +449,7 @@ export default function Budget() {
                     type="text"
                     value={budgetCode}
                     onChange={(e) => setBudgetCode(e.target.value)}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                   />
                 </div>
               </div>
@@ -461,7 +461,7 @@ export default function Budget() {
                   value={clientAddress}
                   onChange={(e) => setClientAddress(e.target.value)}
                   placeholder="Ex: Bairro Belvedere, Belo Horizonte - MG"
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                 />
               </div>
 
@@ -472,7 +472,7 @@ export default function Budget() {
                     type="text"
                     value={issueDate}
                     onChange={(e) => setIssueDate(e.target.value)}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -483,7 +483,7 @@ export default function Budget() {
                     max="90"
                     value={validityDays}
                     onChange={(e) => setValidityDays(parseInt(e.target.value, 10) || 30)}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-900 focus:bg-white"
                   />
                 </div>
               </div>
@@ -494,12 +494,12 @@ export default function Budget() {
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-600" />
+                <CheckCircle2 size={16} className="text-blue-900" />
                 2. Produtos e Serviços
               </h3>
               <button
                 onClick={addItem}
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-blue-900 hover:text-blue-950 flex items-center gap-1 cursor-pointer"
               >
                 <PlusCircle size={14} /> Adicionar Item
               </button>
@@ -549,7 +549,7 @@ export default function Budget() {
                       value={item.description}
                       onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                       placeholder="Ex: Colchão casal TRADICIONAL (138 x 188 cm)"
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+                      className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-blue-900"
                     />
                   </div>
 
@@ -594,7 +594,7 @@ export default function Budget() {
                     </div>
                   </div>
 
-                  <div className="text-right text-xs font-bold text-emerald-700 pt-1">
+                  <div className="text-right text-xs font-bold text-blue-900 pt-1">
                     Subtotal do Item: R$ {(item.quantity * item.unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -613,7 +613,7 @@ export default function Budget() {
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 flex items-center justify-between">
                   <span>Desconto Especial / Pix (R$)</span>
-                  <span className="text-[10px] text-emerald-600 font-normal">Opcional</span>
+                  <span className="text-[10px] text-blue-900 font-bold">Opcional</span>
                 </label>
                 <CurrencyInput
                   value={pixDiscount}
@@ -635,9 +635,9 @@ export default function Budget() {
                 />
               </div>
 
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
-                <span className="text-xs font-black text-emerald-900 uppercase">Valor Total do Orçamento:</span>
-                <span className="text-lg font-black text-emerald-700">
+              <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between">
+                <span className="text-xs font-black text-blue-950 uppercase">Valor Total do Orçamento:</span>
+                <span className="text-lg font-black text-blue-900">
                   R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -697,7 +697,7 @@ export default function Budget() {
             type="button"
             onClick={exportToPdf}
             disabled={generatingPdf}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-xl shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-4 bg-blue-900 hover:bg-slate-900 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-xl shadow-blue-900/20 transition-all cursor-pointer disabled:opacity-50"
           >
             {generatingPdf ? (
               <span>Gerando PDF A4...</span>
@@ -715,7 +715,7 @@ export default function Budget() {
           <div className="w-full max-w-[794px] space-y-3">
             <div className="flex items-center justify-between px-2 text-xs font-bold text-slate-400 print:hidden">
               <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                <FileText size={13} className="text-emerald-600" />
+                <FileText size={13} className="text-blue-900" />
                 Prévia da Folha A4 Oficial (Padrão Norb)
               </span>
               <span>210mm × 297mm</span>
@@ -769,12 +769,12 @@ export default function Budget() {
                 </div>
               </div>
 
-              {/* Accent Green Top Line */}
-              <div className="w-full h-1 bg-[#00c04b] my-4 rounded-full" />
+              {/* Accent Navy Blue Top Line */}
+              <div className="w-full h-1 bg-[#1e3a8a] my-4 rounded-full" />
 
               {/* Section 1: Orçamento ORC-XXXXX (Client Details) */}
               <div className="mb-4">
-                <div className="bg-[#00c04b] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
+                <div className="bg-[#1e3a8a] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
                   Orçamento {budgetCode}
                 </div>
                 <div className="border border-t-0 border-slate-200 p-3.5 rounded-b-md text-xs space-y-1 bg-white">
@@ -795,7 +795,7 @@ export default function Budget() {
 
               {/* Section 2: Informações Básicas */}
               <div className="mb-4">
-                <div className="bg-[#00c04b] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
+                <div className="bg-[#1e3a8a] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
                   Informações Básicas
                 </div>
                 <div className="border border-t-0 border-slate-200 p-3.5 rounded-b-md text-xs bg-white">
@@ -807,7 +807,7 @@ export default function Budget() {
 
               {/* Section 3: Produtos / Serviços Table */}
               <div className="mb-4">
-                <div className="bg-[#00c04b] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
+                <div className="bg-[#1e3a8a] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
                   Produtos
                 </div>
                 <div className="border border-t-0 border-slate-200 rounded-b-md overflow-hidden bg-white">
@@ -858,7 +858,7 @@ export default function Budget() {
                     </div>
 
                     {pixDiscount > 0 && (
-                      <div className="flex justify-end items-center gap-12 pr-2 text-xs font-semibold text-emerald-600">
+                      <div className="flex justify-end items-center gap-12 pr-2 text-xs font-semibold text-blue-900">
                         <span>Desconto Pix:</span>
                         <span className="font-bold min-w-[80px] text-right">
                           - R$ {pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -867,7 +867,7 @@ export default function Budget() {
                     )}
 
                     <div className="flex justify-end pt-1">
-                      <div className="bg-[#00c04b] text-white px-6 py-2 rounded-md font-bold text-base flex items-center justify-between w-full max-w-[280px] shadow-sm">
+                      <div className="bg-[#1e3a8a] text-white px-6 py-2 rounded-md font-bold text-base flex items-center justify-between w-full max-w-[280px] shadow-sm">
                         <span>TOTAL:</span>
                         <span>R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
@@ -884,7 +884,7 @@ export default function Budget() {
 
               {/* Section 4: Garantia */}
               <div className="mb-4">
-                <div className="bg-[#00c04b] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
+                <div className="bg-[#1e3a8a] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
                   Garantia
                 </div>
                 <div className="border border-t-0 border-slate-200 p-3.5 rounded-b-md text-xs leading-relaxed text-slate-700 bg-white">
@@ -894,7 +894,7 @@ export default function Budget() {
 
               {/* Section 5: Termos e Condições */}
               <div className="mb-5">
-                <div className="bg-[#00c04b] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
+                <div className="bg-[#1e3a8a] text-white px-4 py-1.5 font-bold text-sm rounded-t-md tracking-wide">
                   Termos e Condições
                 </div>
                 <div className="border border-t-0 border-slate-200 p-3.5 rounded-b-md text-xs leading-relaxed text-slate-700 space-y-1.5 bg-white">
@@ -938,7 +938,7 @@ export default function Budget() {
               </div>
 
               {/* Document Footer Divider */}
-              <div className="w-full h-0.5 bg-[#00c04b] mb-3" />
+              <div className="w-full h-0.5 bg-[#1e3a8a] mb-3" />
 
               {/* Document Footer Text */}
               <div className="text-center text-[11px] text-slate-500 space-y-0.5">
@@ -964,7 +964,7 @@ export default function Budget() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="text-center space-y-2">
-              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+              <div className="w-14 h-14 bg-blue-50 text-blue-900 rounded-full flex items-center justify-center mx-auto mb-2">
                 <CheckCircle2 size={32} />
               </div>
               <h3 className="text-xl font-black text-slate-900">Orçamento Pronto!</h3>
@@ -974,7 +974,7 @@ export default function Budget() {
             </div>
 
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-2">
-              <p className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-emerald-700">
+              <p className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-blue-900">
                 <Share2 size={13} /> Dica de envio ao cliente:
               </p>
               <ul className="list-disc list-inside space-y-1">
@@ -1001,7 +1001,7 @@ export default function Budget() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowShareModal(false)}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all text-sm cursor-pointer"
+                className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all text-sm cursor-pointer"
               >
                 <Share2 size={18} />
                 Enviar Mensagem no WhatsApp
